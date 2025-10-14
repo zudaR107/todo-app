@@ -1,37 +1,42 @@
 name: Smoke SSH
 
 on:
-  workflow_dispatch: {}
+  workflow_dispatch: {}  # запуск вручную из вкладки Actions
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      - name: Collect known_hosts for host
-        id: kh
+      # 1) Поднимаем ssh-agent и загружаем твой приватный ключ
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_KEY }}
+          ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }} # если ключ без пароля — можно убрать
+
+      # 2) Добавляем host key сервера в known_hosts (как его видит именно раннер GitHub)
+      - name: Add server to known_hosts
         shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           set -euo pipefail
-          echo "Resolving and scanning ${{ secrets.SSH_HOST }}:22 ..."
-          KH="$(ssh-keyscan -T 5 -H -p 22 "${{ secrets.SSH_HOST }}" 2>/dev/null)"
-          if [ -z "$KH" ]; then
-            echo "ssh-keyscan produced no output. Check SSH_HOST or firewall." >&2
-            exit 1
-          fi
-          echo "$KH"
-          echo "KNOWN_HOSTS<<'EOF'" >> "$GITHUB_OUTPUT"
-          echo "$KH" >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" >> ~/.ssh/known_hosts
+          echo "Known hosts entry:"
+          ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" | ssh-keygen -lf -
 
-      - name: SSH check (with known_hosts)
-        uses: garygrossgarten/github-action-ssh@v0.7.2
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          privateKey: ${{ secrets.SSH_KEY }}
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}
-          knownHosts: ${{ steps.kh.outputs.KNOWN_HOSTS }}
-          command: |
+      # 3) Дымовой вход по SSH и простые проверки на сервере
+      - name: SSH smoke
+        shell: bash
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SERVER_PROJECT_DIR: ${{ secrets.SERVER_PROJECT_DIR }}
+        run: |
+          set -euo pipefail
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -p 22 "${SSH_USER}@${SSH_HOST}" '
             set -euo pipefail
             echo "User: $(whoami)"
             echo "Host: $(hostname -f)"
@@ -46,4 +51,5 @@ jobs:
               echo "Docker Compose not found" >&2
               exit 1
             fi
-            ls -la ${{ secrets.SERVER_PROJECT_DIR }}
+            ls -la "'"${SERVER_PROJECT_DIR}"'"
+          '
