@@ -13,9 +13,26 @@ jobs:
     permissions:
       contents: read
       packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Set IMAGE_BACKEND (fallback if vars empty)
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Берём repo owner и приводим к нижнему регистру
+          OWNER_LOWER="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          # Если в Repository Variables задан IMAGE_BACKEND — используем его,
+          # иначе ставим дефолт ghcr.io/<owner>/todo-backend
+          IMAGE_BACKEND="${{ vars.IMAGE_BACKEND }}"
+          if [ -z "${IMAGE_BACKEND}" ]; then
+            IMAGE_BACKEND="ghcr.io/${OWNER_LOWER}/todo-backend"
+          fi
+          echo "IMAGE_BACKEND=${IMAGE_BACKEND}" >> "$GITHUB_OUTPUT"
+          echo "Using IMAGE_BACKEND=${IMAGE_BACKEND}"
 
       - name: Log in to GHCR (push)
         uses: docker/login-action@v3
@@ -24,11 +41,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Set version
+      - name: Set version tags
         id: vars
         run: |
           echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           echo "TAG_LATEST=latest" >> $GITHUB_OUTPUT
+          echo "Building tags: ${{ steps.image.outputs.IMAGE_BACKEND }}:${GITHUB_REF_NAME} and :latest"
 
       - name: Build & push backend image
         uses: docker/build-push-action@v6
@@ -37,12 +55,13 @@ jobs:
           file: ./backend/Dockerfile
           push: true
           tags: |
-            ${{ vars.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG }}
-            ${{ vars.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG_LATEST }}
+            ${{ steps.image.outputs.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG }}
+            ${{ steps.image.outputs.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG_LATEST }}
 
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+
     steps:
       - name: Collect known_hosts for host
         id: kh
