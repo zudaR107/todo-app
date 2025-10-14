@@ -1,33 +1,43 @@
 name: Smoke SSH
 
 on:
-  workflow_dispatch: {}  # запуск вручную из вкладки Actions
+  workflow_dispatch: {}  # запуск вручную
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      # 1) Поднимаем ssh-agent и загружаем твой приватный ключ
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_KEY }}
-          ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }} # если ключ без пароля — можно убрать
-
-      # 2) Добавляем host key сервера в known_hosts (как его видит именно раннер GitHub)
-      - name: Add server to known_hosts
+      # 1) Соберём known_hosts на самом раннере — ровно так, как он видит хост
+      - name: Collect known_hosts for host
+        id: kh
         shell: bash
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           set -euo pipefail
-          mkdir -p ~/.ssh
-          chmod 700 ~/.ssh
-          ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" >> ~/.ssh/known_hosts
-          echo "Known hosts entry:"
-          ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" | ssh-keygen -lf -
+          echo "Scanning $SSH_HOST:22 ..."
+          KH="$(ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" 2>/dev/null)"
+          if [ -z "$KH" ]; then
+            echo "ssh-keyscan produced no output. Check SSH_HOST or firewall." >&2
+            exit 1
+          fi
+          echo "$KH"
+          {
+            echo "KNOWN_HOSTS<<'EOF'"
+            echo "$KH"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
-      # 3) Дымовой вход по SSH и простые проверки на сервере
+      # 2) Добавим приватный ключ в агент + пропишем known_hosts (с поддержкой passphrase)
+      - name: Setup SSH key (with passphrase & known_hosts)
+        uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_KEY }}                  # приватный ключ deploy
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}    # если ключ без пароля — можно оставить пустым/не указывать
+          known_hosts: ${{ steps.kh.outputs.KNOWN_HOSTS }}
+          if_key_exists: replace
+
+      # 3) Дымовой вход по SSH и проверки Docker/compose
       - name: SSH smoke
         shell: bash
         env:
