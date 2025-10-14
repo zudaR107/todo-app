@@ -1,13 +1,11 @@
 name: Smoke SSH
-
 on:
-  workflow_dispatch: {}  # запуск вручную
+  workflow_dispatch: {}
 
 jobs:
   smoke:
     runs-on: ubuntu-latest
     steps:
-      # 1) Соберём known_hosts на самом раннере — ровно так, как он видит хост
       - name: Collect known_hosts for host
         id: kh
         shell: bash
@@ -15,51 +13,24 @@ jobs:
           SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
           set -euo pipefail
-          echo "Scanning $SSH_HOST:22 ..."
-          KH="$(ssh-keyscan -T 5 -H -p 22 "$SSH_HOST" 2>/dev/null)"
-          if [ -z "$KH" ]; then
-            echo "ssh-keyscan produced no output. Check SSH_HOST or firewall." >&2
-            exit 1
-          fi
-          echo "$KH"
-          {
-            echo "KNOWN_HOSTS<<'EOF'"
-            echo "$KH"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          KH="$(ssh-keyscan -T 10 -p 22 "$SSH_HOST" 2>/dev/null)"
+          [ -n "$KH" ] || { echo "ssh-keyscan empty"; exit 1; }
+          { echo "KNOWN_HOSTS<<EOF"; echo "$KH"; echo "EOF"; } >> "$GITHUB_OUTPUT"
 
-      # 2) Добавим приватный ключ в агент + пропишем known_hosts (с поддержкой passphrase)
-      - name: Setup SSH key (with passphrase & known_hosts)
+      - name: Setup CI SSH key & known_hosts
         uses: shimataro/ssh-key-action@v2
         with:
-          key: ${{ secrets.SSH_KEY }}                  # приватный ключ deploy
-          passphrase: ${{ secrets.SSH_PASSPHRASE }}    # если ключ без пароля — можно оставить пустым/не указывать
+          key: ${{ secrets.SSH_KEY }}
           known_hosts: ${{ steps.kh.outputs.KNOWN_HOSTS }}
           if_key_exists: replace
 
-      # 3) Дымовой вход по SSH и проверки Docker/compose
-      - name: SSH smoke
+      - name: SSH smoke (runs forced deploy command on server)
         shell: bash
         env:
           SSH_HOST: ${{ secrets.SSH_HOST }}
           SSH_USER: ${{ secrets.SSH_USER }}
-          SERVER_PROJECT_DIR: ${{ secrets.SERVER_PROJECT_DIR }}
         run: |
           set -euo pipefail
-          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes -p 22 "${SSH_USER}@${SSH_HOST}" '
-            set -euo pipefail
-            echo "User: $(whoami)"
-            echo "Host: $(hostname -f)"
-            echo "ID:   $(id)"
-            which docker
-            docker --version
-            if docker compose version >/dev/null 2>&1; then
-              docker compose version
-            elif command -v docker-compose >/dev/null 2>&1; then
-              docker-compose version
-            else
-              echo "Docker Compose not found" >&2
-              exit 1
-            fi
-            ls -la "'"${SERVER_PROJECT_DIR}"'"
-          '
+          # authorized_keys у CI-ключа содержит command="/usr/local/bin/deploy-todo.sh"
+          # здесь просто подключаемся - скрипт отработает сам (и "пропустит", если образов ещё нет)
+          ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}"
