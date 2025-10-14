@@ -137,3 +137,56 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+/backend/dist/
+/backend/coverage/
+/backend/.env
+/backend/.env.* !/backend/.env.example
+
+/frontend/dist/
+/frontend/coverage/
+/frontend/.env
+/frontend/.env.* !/frontend/.env.example
+
+/bot/dist/
+/bot/coverage/
+/bot/.env
+/bot/.env.* !/bot/.env.example
+
+/infra/.env
+/infra/.env.* !/infra/.env.example
+/infra/docker-compose.override.yml
+/infra/Caddyfile.dev
+/infra/caddy_data/
+/infra/caddy_config/
+/infra/mongo_data/
+
+**/.dockerignore-local
+**/.cache-docker/
+**/.tmp-build/
+
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.jks
+*.keystore
+id_rsa
+id_rsa.pub
+id_ed25519
+id_ed25519.pub
+*.sql
+*.sqlite
+*.sqlite3
+*.dump
+*.bak

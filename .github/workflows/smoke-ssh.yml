@@ -1,21 +1,14 @@
-name: Smoke SSH
-on:
-  workflow_dispatch: {}
-
-jobs:
-  smoke:
-    runs-on: ubuntu-latest
-    steps:
-      - name: SSH check
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          known_hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
-          script: |
-            whoami
-            hostname -f
-            docker --version
-            docker compose version
-            ls -la ${{ secrets.SERVER_PROJECT_DIR }}
+- name: SSH check
+  uses: appleboy/ssh-action@v1.2.0
+  with:
+    host: ${{ secrets.SSH_HOST }}
+    username: ${{ secrets.SSH_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    passphrase: ${{ secrets.SSH_PASSPHRASE }}
+    fingerprint: ${{ secrets.SSH_FINGERPRINT }}
+    script: |
+      whoami
+      hostname -f
+      docker --version
+      docker compose version
+      ls -la ${{ secrets.SERVER_PROJECT_DIR }}
