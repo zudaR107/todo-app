@@ -1,14 +1,34 @@
-- name: SSH check
-  uses: appleboy/ssh-action@v1.2.0
-  with:
-    host: ${{ secrets.SSH_HOST }}
-    username: ${{ secrets.SSH_USER }}
-    key: ${{ secrets.SSH_KEY }}
-    passphrase: ${{ secrets.SSH_PASSPHRASE }}
-    fingerprint: ${{ secrets.SSH_FINGERPRINT }}
-    script: |
-      whoami
-      hostname -f
-      docker --version
-      docker compose version
-      ls -la ${{ secrets.SERVER_PROJECT_DIR }}
+name: Smoke SSH
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH check
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          passphrase: ${{ secrets.SSH_PASSPHRASE }}
+          fingerprint: ${{ secrets.SSH_FINGERPRINT }}
+          script_stop: true
+          script: |
+            set -euo pipefail
+            echo "User: $(whoami)"
+            echo "Host: $(hostname -f)"
+            echo "ID:   $(id)"
+            which docker
+            docker --version
+            if docker compose version >/dev/null 2>&1; then
+              docker compose version
+            elif command -v docker-compose >/dev/null 2>&1; then
+              docker-compose version
+            else
+              echo "Docker Compose not found" >&2
+              exit 1
+            fi
+            ls -la ${{ secrets.SERVER_PROJECT_DIR }}
