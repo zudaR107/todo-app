@@ -75,4 +75,3 @@ jobs:
             export GHCR_PAT='"${GHCR_PAT}"'
             export GITHUB_USER='"${GHCR_USERNAME}"'
             true
-EOF
