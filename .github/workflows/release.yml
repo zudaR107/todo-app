@@ -23,10 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Берём repo owner и приводим к нижнему регистру
           OWNER_LOWER="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
-          # Если в Repository Variables задан IMAGE_BACKEND — используем его,
-          # иначе ставим дефолт ghcr.io/<owner>/todo-backend
           IMAGE_BACKEND="${{ vars.IMAGE_BACKEND }}"
           if [ -z "${IMAGE_BACKEND}" ]; then
             IMAGE_BACKEND="ghcr.io/${OWNER_LOWER}/todo-backend"
