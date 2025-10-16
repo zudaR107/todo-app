@@ -48,7 +48,7 @@ jobs:
       - name: Set version tags
         id: vars
         run: |
-          echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT          # v1.2.3
+          echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           echo "TAG_LATEST=latest" >> $GITHUB_OUTPUT
           echo "Building tags: ${{ steps.image.outputs.IMAGE_BACKEND }}:${GITHUB_REF_NAME} and :latest"
 
@@ -100,11 +100,50 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Checkout (need CHANGELOG.md)
+        uses: actions/checkout@v4
+
+      - name: Extract section from CHANGELOG for this tag
+        id: changelog
+        shell: bash
+        env:
+          TAG: ${{ needs.build-and-push.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if [ ! -f CHANGELOG.md ]; then
+            echo "# Changelog\n\nNo CHANGELOG.md found." > CHANGELOG_RELEASE.md
+            exit 0
+          fi
+
+          awk -v tag="$TAG" '
+            BEGIN { start=0 }
+            /^##[[:space:]]*(\[[Vv]?[0-9]+\.[0-9]+\.[0-9]+\]|[Vv]?[0-9]+\.[0-9]+\.[0-9]+)/ {
+              if (start==1) exit
+              line=$0
+              gsub(/[\[\]]/,"",line)
+              l=line; t=tag
+              gsub(/V/,"v",l); gsub(/V/,"v",t)
+              if (index(l, t) > 0) { start=1 }
+            }
+            { if (start==1) print }
+          ' CHANGELOG.md > CHANGELOG_RELEASE.md
+
+          if [ ! -s CHANGELOG_RELEASE.md ]; then
+            cp CHANGELOG.md CHANGELOG_RELEASE.md
+          fi
+
+          echo "Prepared CHANGELOG_RELEASE.md:"
+          sed -n '1,80p' CHANGELOG_RELEASE.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.build-and-push.outputs.tag }}
           name: Release ${{ needs.build-and-push.outputs.tag }}
-          body: |
-            Deployed successfully to production.
-            Image: ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}
+          body_path: CHANGELOG_RELEASE.md
+          files: |
+            CHANGELOG_RELEASE.md
+
+      - name: Print release info
+        run: |
+          echo "Released ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}"
