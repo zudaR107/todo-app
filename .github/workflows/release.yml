@@ -94,28 +94,33 @@ jobs:
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}"
 
   create-release:
-    runs-on: ubuntu-latest
-    needs: [build-and-push, deploy]
-    if: ${{ needs.deploy.result == 'success' }}
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout (need CHANGELOG.md)
-        uses: actions/checkout@v4
+  runs-on: ubuntu-latest
+  needs: [build-and-push, deploy]
+  if: ${{ needs.deploy.result == 'success' }}
+  permissions:
+    contents: write
+  steps:
+    - name: Checkout (need git history & files)
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
-      - name: Extract section from CHANGELOG for this tag
-        id: changelog
-        shell: bash
-        env:
-          TAG: ${{ needs.build-and-push.outputs.tag }}
-        run: |
-          set -euo pipefail
-          if [ ! -f CHANGELOG.md ]; then
-            echo "# Changelog\n\nNo CHANGELOG.md found." > CHANGELOG_RELEASE.md
-            exit 0
-          fi
+    - name: Prepare changelog for this tag
+      id: changelog
+      shell: bash
+      env:
+        TAG: ${{ needs.build-and-push.outputs.tag }}
+      run: |
+        set -euo pipefail
 
-          awk -v tag="$TAG" '
+        # Попробуем найти предыдущий тег (сортировка по аннотации/датам)
+        PREV_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
+        echo "Current tag: ${TAG}"
+        echo "Previous tag: ${PREV_TAG:-<none>}"
+
+        if [ -f CHANGELOG.md ]; then
+          echo "[info] Using CHANGELOG.md and extracting section for ${TAG}"
+          awk -v tag="${TAG}" '
             BEGIN { start=0 }
             /^##[[:space:]]*(\[[Vv]?[0-9]+\.[0-9]+\.[0-9]+\]|[Vv]?[0-9]+\.[0-9]+\.[0-9]+)/ {
               if (start==1) exit
@@ -129,21 +134,63 @@ jobs:
           ' CHANGELOG.md > CHANGELOG_RELEASE.md
 
           if [ ! -s CHANGELOG_RELEASE.md ]; then
-            cp CHANGELOG.md CHANGELOG_RELEASE.md
+            echo "[warn] Section for ${TAG} not found in CHANGELOG.md. Will fallback to git log."
+          else
+            echo "[ok] Extracted section from CHANGELOG.md"
           fi
+        fi
 
-          echo "Prepared CHANGELOG_RELEASE.md:"
-          sed -n '1,80p' CHANGELOG_RELEASE.md
+        if [ ! -s CHANGELOG_RELEASE.md ]; then
+          echo "[info] Building changelog from git log..."
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.build-and-push.outputs.tag }}
-          name: Release ${{ needs.build-and-push.outputs.tag }}
-          body_path: CHANGELOG_RELEASE.md
-          files: |
-            CHANGELOG_RELEASE.md
+          {
+            echo "## ${TAG}"
+            echo
+            if [ -n "${PREV_TAG}" ]; then
+              echo "_Changes since ${PREV_TAG}_"
+              echo
+              RANGE="${PREV_TAG}..${TAG}"
+            else
+              echo "_Initial release_"
+              echo
+              RANGE="${TAG}"
+            fi
 
-      - name: Print release info
-        run: |
-          echo "Released ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}"
+            # 1) Попробуем собрать заголовки PR из merge-коммитов
+            echo "### Merged Pull Requests"
+            MERGES="$(git log --merges --pretty=format:'- %s (%h)' "${RANGE}" | sed 's/Merge pull request /PR #/I' || true)"
+            if [ -n "${MERGES}" ]; then
+              echo "${MERGES}"
+            else
+              echo "- (none)"
+            fi
+            echo
+
+            # 2) Затем – обычные коммиты (без merge), короткие сообщения
+            echo "### Commits"
+            COMMITS="$(git log --pretty=format:'- %s (%h)' --no-merges "${RANGE}" || true)"
+            if [ -n "${COMMITS}" ]; then
+              echo "${COMMITS}"
+            else
+              echo "- (none)"
+            fi
+            echo
+          } > CHANGELOG_RELEASE.md
+        fi
+
+        echo "[preview] ===== CHANGELOG_RELEASE.md ====="
+        sed -n '1,120p' CHANGELOG_RELEASE.md
+        echo "========================================"
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.build-and-push.outputs.tag }}
+        name: Release ${{ needs.build-and-push.outputs.tag }}
+        body_path: CHANGELOG_RELEASE.md
+        files: |
+          CHANGELOG_RELEASE.md
+
+    - name: Print release info
+      run: |
+        echo "Released ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}"
