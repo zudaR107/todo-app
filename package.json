@@ -1,0 +1,11 @@
+{
+  "name": "todo-app",
+  "private": true,
+  "workspaces": ["backend", "frontend"],
+  "scripts": {
+    "lint": "npm -w backend run lint && npm -w frontend run lint",
+    "build": "npm -w backend run build && npm -w frontend run build",
+    "dev:backend": "npm -w backend run dev",
+    "dev:frontend": "npm -w frontend run dev"
+  }
+}
