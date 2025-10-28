@@ -5,7 +5,9 @@
 
 ## [Unreleased]
 ### Added
-- (Список того, что уже сделано в main, но еще не выпущено в новый тег)
+- Файл docker-compose.yml переименован в docker-compose.dev.yaml
+- Добавлен файл docker-compose.prod.yml
+- 
 
 ### Changed
 - 
