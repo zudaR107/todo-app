@@ -53,7 +53,7 @@ jobs:
           if-no-files-found: error
           retention-days: 5
 
-      - name: Build Docker image (no push)
+      - name: Build Docker image
         uses: docker/build-push-action@v6
         with:
           context: ./backend
