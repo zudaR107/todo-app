@@ -1,6 +1,6 @@
-import createError from 'http-errors'
-import type { ErrorRequestHandler, RequestHandler } from 'express'
-import { ZodError } from 'zod'
+import createError from "http-errors"
+import type { ErrorRequestHandler, RequestHandler } from "express"
+import { ZodError } from "zod"
 
 export const notFound: RequestHandler = (_req, _res, next) => {
     next(createError(404, 'Not Found'));

@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import type { ZodType } from 'zod';
+import type { ZodType } from "zod";
 
 export function validate(schemas: {
     body?: ZodType;
