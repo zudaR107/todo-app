@@ -1,5 +1,5 @@
 import createError from 'http-errors'
-import { ErrorRequestHandler, RequestHandler } from 'express'
+import type { ErrorRequestHandler, RequestHandler } from 'express'
 import { ZodError } from 'zod'
 
 export const notFound: RequestHandler = (_req, _res, next) => {
