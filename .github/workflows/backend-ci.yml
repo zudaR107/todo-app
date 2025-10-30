@@ -39,8 +39,8 @@ jobs:
             npx tsc -p tsconfig.json --noEmit
           fi
 
-      - name: Tests (if present)
-        run: npm test --if-present -- --ci
+      - name: Tests (vitest)
+        run: npm test --if-present
 
       - name: Build (ts -> dist)
         run: npm run build
