@@ -1,5 +1,11 @@
-import type { RequestHandler } from "express";
-import type { ZodType } from "zod";
+import type { RequestHandler } from 'express';
+import type { ZodType } from 'zod';
+
+type Bag = { 
+    body?: unknown; 
+    query?: unknown; 
+    params?: unknown 
+};
 
 export function validate(schemas: {
     body?: ZodType;
@@ -8,9 +14,21 @@ export function validate(schemas: {
 }): RequestHandler {
     return (req, _res, next) => {
         try {
-            if (schemas.body) (req as any).body = schemas.body.parse(req.body);
-            if (schemas.query) (req as any).query = schemas.query.parse(req.query);
-            if (schemas.params) (req as any).params = schemas.params.parse(req.params);
+            const bag = req as unknown as Bag;
+
+            if (schemas.body) {
+                const parsed = schemas.body.parse(bag.body);
+                bag.body = parsed;
+            }
+            if (schemas.query) {
+                const parsed = schemas.query.parse(bag.query);
+                bag.query = parsed;
+            }
+            if (schemas.params) {
+                const parsed = schemas.params.parse(bag.params);
+                bag.params = parsed;
+            }
+
             next();
         } catch (err) {
             next(err);
