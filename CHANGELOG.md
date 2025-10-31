@@ -5,8 +5,12 @@
 
 ## [Unreleased]
 ### Added
-- Файл docker-compose.yml переименован в docker-compose.dev.yaml
-- Добавлен файл docker-compose.prod.yml
+- Файл docker-compose.dev.yaml
+- Файл docker-compose.prod.yml
+- Поддержка access и refresh токенов
+- Корректная обработка ошибок через Zod
+- Валидация схем через Zod
+- OpenAPI генератор
 - 
 
 ### Changed
