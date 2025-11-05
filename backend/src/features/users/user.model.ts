@@ -8,7 +8,7 @@ const userSchema = new Schema(
     password: { type: String, required: true, select: false, minlength: 6 }, // только строка!
     role: { type: String, enum: ['superadmin', 'user'], default: 'user' },
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 type User = InferSchemaType<typeof userSchema>;

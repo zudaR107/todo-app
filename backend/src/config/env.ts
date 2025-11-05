@@ -1,5 +1,5 @@
-import "dotenv/config";
-import type { SignOptions } from "jsonwebtoken";
+import 'dotenv/config';
+import type { SignOptions } from 'jsonwebtoken';
 
 type JwtExpiresIn = Exclude<SignOptions['expiresIn'], undefined>;
 

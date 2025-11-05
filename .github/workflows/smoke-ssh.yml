@@ -31,6 +31,4 @@ jobs:
           SSH_USER: ${{ secrets.SSH_USER }}
         run: |
           set -euo pipefail
-          # authorized_keys у CI-ключа содержит command="/usr/local/bin/deploy-todo.sh"
-          # здесь просто подключаемся - скрипт отработает сам (и "пропустит", если образов ещё нет)
           ssh -o BatchMode=yes -o StrictHostKeyChecking=yes "${SSH_USER}@${SSH_HOST}"
