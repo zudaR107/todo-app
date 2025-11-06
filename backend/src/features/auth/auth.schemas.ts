@@ -12,20 +12,31 @@ export const LoginBody = z
 
 export const MeResponse = z
   .object({
-    id: z.string(),
-    email: z.email(),
-    displayName: z.string(),
+    id: z
+      .string()
+      .regex(/^[0-9a-f]{24}$/i, 'Must be a Mongo ObjectId')
+      .openapi({ example: '64f1c2a0e4b0c9a1d2345678' }),
+    email: z.email().openapi({ example: 'user@example.com' }),
+    displayName: z.string().openapi({ example: 'Alice' }),
     role: Role,
   })
   .openapi('MeResponse');
 
 export const AuthTokens = z
   .object({
-    accessToken: z.string(),
+    accessToken: z.string().openapi({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }),
   })
   .openapi('AuthTokens');
+
+export const LoginResponse = z
+  .object({
+    accessToken: z.string().openapi({ example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' }),
+    user: MeResponse,
+  })
+  .openapi('LoginResponse');
 
 registry.register('Role', Role);
 registry.register('LoginBody', LoginBody);
 registry.register('MeResponse', MeResponse);
 registry.register('AuthTokens', AuthTokens);
+registry.register('LoginResponse', LoginResponse);
