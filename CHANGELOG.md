@@ -15,7 +15,10 @@
 - Swagger UI по адресу /api/docs и /api/openapi.json
 - Валидация тела запроса на /auth/login (Zod)
 - Обёртка asyncHandler для безопасной обработки ошибок в контроллерах
-- 
+- Маршрут создания пользователя: POST /api/users (только superadmin)
+- Bootstrap супер-админа через ALLOW_BOOTSTRAP и BOOTSTRAP_* env
+- Интеграционные тесты: логин superadmin → create user → логин user → запрет на создание
+- OpenAPI для Auth и Users с корректной security (login/refresh/logout без Bearer)
 
 ### Changed
 - 
