@@ -7,7 +7,7 @@ import { login, refresh, logout, me } from './auth.controller.js';
 
 const r = Router();
 
-/** OpenAPI: /auth/login */
+/** OpenAPI: POST /auth/login */
 registry.registerPath({
   method: 'post',
   path: '/auth/login',
@@ -40,7 +40,7 @@ registry.registerPath({
 });
 r.post('/login', validate({ body: LoginBody }), login);
 
-/** OpenAPI: /auth/refresh */
+/** OpenAPI: POST /auth/refresh */
 registry.registerPath({
   method: 'post',
   path: '/auth/refresh',
@@ -57,7 +57,7 @@ registry.registerPath({
 });
 r.post('/refresh', refresh);
 
-/** OpenAPI: /auth/logout */
+/** OpenAPI: POST /auth/logout */
 registry.registerPath({
   method: 'post',
   path: '/auth/logout',
@@ -81,7 +81,7 @@ registry.registerPath({
 });
 r.post('/logout', logout);
 
-/** OpenAPI: /auth/me */
+/** OpenAPI: GET /auth/me */
 registry.registerPath({
   method: 'get',
   path: '/auth/me',
