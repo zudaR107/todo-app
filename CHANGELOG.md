@@ -11,6 +11,10 @@
 - Корректная обработка ошибок через Zod
 - Валидация схем через Zod
 - OpenAPI генератор
+- Маршруты авторизации: /api/auth/login, /api/auth/refresh, /api/auth/logout, /api/auth/me
+- Swagger UI по адресу /api/docs и /api/openapi.json
+- Валидация тела запроса на /auth/login (Zod)
+- Обёртка asyncHandler для безопасной обработки ошибок в контроллерах
 - 
 
 ### Changed
