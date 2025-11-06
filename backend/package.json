@@ -42,12 +42,12 @@
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
     "eslint": "^9.37.0",
-    "mongodb-memory-server": "^10.2.3",
+    "mongodb-memory-server": "^10.3.0",
     "prettier": "^3.6.2",
     "supertest": "^7.1.4",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.1",
-    "vitest": "^4.0.5"
+    "vitest": "^4.0.7"
   }
 }
