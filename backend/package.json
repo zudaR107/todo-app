@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "test": "vitest run --reporter=dot",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^8.1.0",
