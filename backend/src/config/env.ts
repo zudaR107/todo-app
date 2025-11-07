@@ -3,10 +3,17 @@ import type { SignOptions } from 'jsonwebtoken';
 
 type JwtExpiresIn = Exclude<SignOptions['expiresIn'], undefined>;
 
+function parseOrigins(s?: string): string[] {
+  return (s ?? '')
+    .split(',')
+    .map((v) => v.trim())
+    .filter(Boolean);
+}
+
 interface Env {
   PORT: number;
   MONGO_URI: string;
-  CORS_ORIGIN: string;
+  CORS_ORIGINS: string[];
   JWT_ACCESS_SECRET: string;
   JWT_REFRESH_SECRET: string;
   ACCESS_TTL: JwtExpiresIn;
@@ -19,7 +26,7 @@ interface Env {
 export const env: Env = {
   PORT: Number(process.env.PORT ?? 8080),
   MONGO_URI: process.env.MONGO_URI ?? 'mongodb://localhost:27017/todo',
-  CORS_ORIGIN: process.env.CORS_ORIGIN ?? '*',
+  CORS_ORIGINS: parseOrigins(process.env.CORS_ORIGIN),
 
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET ?? 'dev_access',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET ?? 'dev_refresh',
