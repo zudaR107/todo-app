@@ -13,7 +13,21 @@ export function createApp() {
   const app = express();
   app.set('trust proxy', 1);
   app.use(helmet());
-  app.use(cors({ origin: env.CORS_ORIGIN ?? '*', credentials: true }));
+
+  const allowList = new Set(env.CORS_ORIGINS);
+  app.use(
+    cors({
+      credentials: true,
+      origin(origin, cb) {
+        if (!origin) return cb(null, true);
+        if (allowList.size === 0) return cb(null, false);
+        return cb(null, allowList.has(origin));
+      },
+      methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    }),
+  );
+
   app.use(express.json());
   app.use(cookieParser());
   app.use(morgan('dev'));

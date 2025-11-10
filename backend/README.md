@@ -8,14 +8,14 @@ Backend for the personal Todo application. Node.js + Express + TypeScript, Mongo
 
 ## Features
 
-* **Auth:** JWT access tokens, httpOnly **refresh** cookie, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
-* **RBAC:** `authGuard` + `requireRole('superadmin')` middleware.
-* **Admin-only users:** `POST /api/users` creates users and is restricted to superadmin.
-* **Validation:** Zod schemas for requests/responses; runtime validation + shared types.
-* **Docs:** OpenAPI v3 with Swagger UI at `/api/docs`, JSON at `/api/openapi.json`.
-* **Error handling:** Central error middleware, Zod-aware 400s, consistent JSON.
-* **Bootstrap:** Optional one-time superadmin seeding via env flags.
-* **Tests:** Vitest + Supertest + mongodb-memory-server integration tests.
+- **Auth:** JWT access tokens, httpOnly **refresh** cookie, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
+- **RBAC:** `authGuard` + `requireRole('superadmin')` middleware.
+- **Admin-only users:** `POST /api/users` creates users and is restricted to superadmin.
+- **Validation:** Zod schemas for requests/responses; runtime validation + shared types.
+- **Docs:** OpenAPI v3 with Swagger UI at `/api/docs`, JSON at `/api/openapi.json`.
+- **Error handling:** Central error middleware, Zod-aware 400s, consistent JSON.
+- **Bootstrap:** Optional one-time superadmin seeding via env flags.
+- **Tests:** Vitest + Supertest + mongodb-memory-server integration tests.
 
 ---
 
@@ -25,14 +25,14 @@ Base URL is `/api`.
 
 ### Auth
 
-* `POST /api/auth/login` → `{ accessToken, user }` + sets `refresh_token` httpOnly cookie.
-* `POST /api/auth/refresh` → `{ accessToken }` (reads `refresh_token` cookie).
-* `POST /api/auth/logout` → `204 No Content` and clears `refresh_token` cookie.
-* `GET /api/auth/me` → current user (requires **Bearer** access token).
+- `POST /api/auth/login` → `{ accessToken, user }` + sets `refresh_token` httpOnly cookie.
+- `POST /api/auth/refresh` → `{ accessToken }` (reads `refresh_token` cookie).
+- `POST /api/auth/logout` → `204 No Content` and clears `refresh_token` cookie.
+- `GET /api/auth/me` → current user (requires **Bearer** access token).
 
 ### Users (admin-only)
 
-* `POST /api/users` → create user (superadmin only).
+- `POST /api/users` → create user (superadmin only).
 
 Swagger UI: `GET /api/docs`
 OpenAPI JSON: `GET /api/openapi.json`
@@ -65,7 +65,7 @@ BOOTSTRAP_SUPERADMIN_PASSWORD=admin123
 
 > **Important:** After the first successful bootstrapping, disable it in production:
 >
-> * set `ALLOW_BOOTSTRAP=false` and/or remove `BOOTSTRAP_*`.
+> - set `ALLOW_BOOTSTRAP=false` and/or remove `BOOTSTRAP_*`.
 
 **CORS:** If you use cookies or Authorization headers from the browser, set `CORS_ORIGIN` to an explicit origin (e.g., your frontend domain), not `*`.
 
@@ -115,8 +115,8 @@ Stack: Vitest + Supertest + mongodb-memory-server.
 
 Test entry example: `src/features/auth/auth.test.ts` covers
 
-* superadmin login → create user → user login → forbidden create
-* absence of public register route
+- superadmin login → create user → user login → forbidden create
+- absence of public register route
 
 To run a single test file:
 
@@ -172,29 +172,29 @@ backend/
 
 ## Middleware & Errors
 
-* `authGuard` reads `Authorization: Bearer <token>` and attaches `req.user`.
-* `requireRole('superadmin')` enforces admin-only endpoints.
-* `validate({ body/query/params })` parses parts of the request via Zod; on fail returns 400 with details.
-* Centralized `errorHandler` returns JSON; Zod errors get a structured `details` field.
+- `authGuard` reads `Authorization: Bearer <token>` and attaches `req.user`.
+- `requireRole('superadmin')` enforces admin-only endpoints.
+- `validate({ body/query/params })` parses parts of the request via Zod; on fail returns 400 with details.
+- Centralized `errorHandler` returns JSON; Zod errors get a structured `details` field.
 
 ---
 
 ## OpenAPI / Swagger
 
-* We use [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) to derive OpenAPI from Zod schemas and route registrations.
-* Access via:
+- We use [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) to derive OpenAPI from Zod schemas and route registrations.
+- Access via:
+  - **UI**: `GET /api/docs`
+  - **JSON**: `GET /api/openapi.json`
 
-  * **UI**: `GET /api/docs`
-  * **JSON**: `GET /api/openapi.json`
-* Global `bearerAuth` security is enabled, but `/auth/login`, `/auth/refresh`, `/auth/logout` explicitly override it (no bearer required).
+- Global `bearerAuth` security is enabled, but `/auth/login`, `/auth/refresh`, `/auth/logout` explicitly override it (no bearer required).
 
 ---
 
 ## Deployment (overview)
 
-* CI builds/pushes Docker images to GHCR on tag push `v*`.
-* CD deploys to your server via SSH and `docker-compose.prod.yml` (Mongo + backend + Caddy).
-* Backend image: `ghcr.io/<owner>/todo-backend:<tag>` and `:latest`.
+- CI builds/pushes Docker images to GHCR on tag push `v*`.
+- CD deploys to your server via SSH and `docker-compose.prod.yml` (Mongo + backend + Caddy).
+- Backend image: `ghcr.io/<owner>/todo-backend:<tag>` and `:latest`.
 
 > See `.github/workflows/release.yml` and `infra/` for details.
 
@@ -202,9 +202,9 @@ backend/
 
 ## Security Notes
 
-* Rotate `JWT_*_SECRET` for production; keep them out of VCS.
-* Keep `ALLOW_BOOTSTRAP=false` in production after initial admin creation.
-* Use HTTPS (Caddy handles TLS) and limit `CORS_ORIGIN` to your frontend origin when cookies are used.
+- Rotate `JWT_*_SECRET` for production; keep them out of VCS.
+- Keep `ALLOW_BOOTSTRAP=false` in production after initial admin creation.
+- Use HTTPS (Caddy handles TLS) and limit `CORS_ORIGIN` to your frontend origin when cookies are used.
 
 ---
 
