@@ -64,7 +64,9 @@ export const listMyProjects: RequestHandler = asyncHandler(async (req, res) => {
     updatedAt: Date;
   };
 
-  const items: ProjectLean[] = await Project.find({ ownerId: user.sub })
+  const ownerId = new Types.ObjectId(user.sub);
+
+  const items: ProjectLean[] = await Project.find({ ownerId })
     .sort({ createdAt: -1 })
     .lean()
     .exec();
