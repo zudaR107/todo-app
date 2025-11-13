@@ -8,15 +8,19 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-*
+* **Projects**: you can now create projects, list your own, rename, and delete them.
+* **Permissions**: each user can see and manage only their own projects; the **superadmin** can manage any project.
+* **Docs**: a **Projects** section is available in `/api/docs`.
 
 ### Changed
 
-*
+* OpenAPI: added the **Projects** tag and promoted request/response schemas to named components.
 
-### Fixed
+### Technical (for devs)
 
-*
+* Mongoose `Project` model with `{ ownerId: 1 }` index and `timestamps`.
+* Zod schemas registered as OpenAPI components: `CreateProjectBody`, `UpdateProjectBody`, `ProjectResponse`, `ProjectIdParam`.
+* Integration tests (Vitest + Supertest + mongodb-memory-server) cover CRUD and authorization rules.
 
 ---
 
@@ -37,22 +41,6 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * Superadmin bootstrap via `ALLOW_BOOTSTRAP` and `BOOTSTRAP_*` environment variables.
 * Integration tests: superadmin login → create user → user login → creation forbidden.
 * OpenAPI for Auth and Users with correct security (login/refresh/logout do **not** require Bearer; others do).
-
-### Changed
-
-*
-
-### Fixed
-
-*
-
----
-
-## v0.1.5 - 2025-10-16
-
-### Added
-
-*
 
 ### Changed
 
