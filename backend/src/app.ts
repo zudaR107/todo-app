@@ -7,6 +7,7 @@ import { env } from './config/env.js';
 import { notFound, errorHandler } from './common/errors.js';
 import authRoutes from './features/auth/auth.routes.js';
 import usersRoutes from './features/users/users.routes.js';
+import projectsRoutes from './features/projects/projects.routes.js';
 import { mountSwagger } from './docs/swagger.js';
 
 export function createApp() {
@@ -37,6 +38,7 @@ export function createApp() {
   // API
   app.use('/api/auth', authRoutes);
   app.use('/api/users', usersRoutes);
+  app.use('/api/projects', projectsRoutes);
 
   // Docs
   mountSwagger(app);

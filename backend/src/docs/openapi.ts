@@ -7,7 +7,7 @@ export function buildOpenApiDoc() {
     openapi: '3.0.3',
     info: {
       title: 'Todo API',
-      version: '0.1.6',
+      version: '0.1.7',
       description:
         'Backend API for todo-app. Auth: Bearer access token; refresh via httpOnly cookie.',
     },
