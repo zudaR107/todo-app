@@ -4,11 +4,7 @@ import createError from 'http-errors';
 
 import { Task } from './tasks.model.js';
 import { Project } from '../projects/projects.model.js';
-import type {
-  CreateTaskInput,
-  UpdateTaskInput,
-  ListTasksQueryInput,
-} from './tasks.schemas.js';
+import type { CreateTaskInput, UpdateTaskInput, ListTasksQueryInput } from './tasks.schemas.js';
 import type { JWTPayload } from '../../common/auth.js';
 import { asyncHandler } from '../../common/async.js';
 
