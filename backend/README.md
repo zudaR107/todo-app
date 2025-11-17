@@ -8,14 +8,16 @@ Backend for the personal Todo application. Node.js + Express + TypeScript, Mongo
 
 ## Features
 
-- **Auth:** JWT access tokens, httpOnly **refresh** cookie, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
-- **RBAC:** `authGuard` + `requireRole('superadmin')` middleware.
-- **Admin-only users:** `POST /api/users` creates users and is restricted to superadmin.
-- **Validation:** Zod schemas for requests/responses; runtime validation + shared types.
-- **Docs:** OpenAPI v3 with Swagger UI at `/api/docs`, JSON at `/api/openapi.json`.
-- **Error handling:** Central error middleware, Zod-aware 400s, consistent JSON.
-- **Bootstrap:** Optional one-time superadmin seeding via env flags.
-- **Tests:** Vitest + Supertest + mongodb-memory-server integration tests.
+* **Auth:** JWT access tokens, httpOnly **refresh** cookie, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
+* **RBAC:** `authGuard` + `requireRole('superadmin')` middleware.
+* **Admin-only users:** `POST /api/users` creates users and is restricted to superadmin.
+* **Projects:** per-user projects for grouping tasks; each user sees only their own projects, while **superadmin** can manage any project.
+* **Tasks:** tasks live inside projects and support status, priority, tags, and optional dates; endpoints support filtering and pagination.
+* **Validation:** Zod schemas for requests/responses; runtime validation + shared types.
+* **Docs:** OpenAPI v3 with Swagger UI at `/api/docs`, JSON at `/api/openapi.json`.
+* **Error handling:** Central error middleware, Zod-aware 400s, consistent JSON.
+* **Bootstrap:** Optional one-time superadmin seeding via env flags.
+* **Tests:** Vitest + Supertest + mongodb-memory-server integration tests.
 
 ---
 
@@ -25,14 +27,37 @@ Base URL is `/api`.
 
 ### Auth
 
-- `POST /api/auth/login` → `{ accessToken, user }` + sets `refresh_token` httpOnly cookie.
-- `POST /api/auth/refresh` → `{ accessToken }` (reads `refresh_token` cookie).
-- `POST /api/auth/logout` → `204 No Content` and clears `refresh_token` cookie.
-- `GET /api/auth/me` → current user (requires **Bearer** access token).
+* `POST /api/auth/login` → `{ accessToken, user }` + sets `refresh_token` httpOnly cookie.
+* `POST /api/auth/refresh` → `{ accessToken }` (reads `refresh_token` cookie).
+* `POST /api/auth/logout` → `204 No Content` and clears `refresh_token` cookie.
+* `GET /api/auth/me` → current user (requires **Bearer** access token).
 
 ### Users (admin-only)
 
-- `POST /api/users` → create user (superadmin only).
+* `POST /api/users` → create user (superadmin only).
+
+### Projects
+
+* `POST /api/projects` → create a new project for the current user.
+* `GET /api/projects` → list projects owned by the current user.
+* `PATCH /api/projects/{id}` → update project name/color (owner or superadmin).
+* `DELETE /api/projects/{id}` → delete a project (owner or superadmin).
+
+### Tasks
+
+* `POST /api/projects/{projectId}/tasks` → create a task in the given project (owner or superadmin).
+* `GET /api/projects/{projectId}/tasks` → list tasks in a project with filters and pagination.
+* `GET /api/tasks/{id}` → get a task by id (project owner or superadmin).
+* `PATCH /api/tasks/{id}` → partially update a task (project owner or superadmin).
+
+Task list filters (`GET /api/projects/{projectId}/tasks`):
+
+* `status`: `todo | doing | done`.
+* `priority`: `low | normal | high`.
+* `tag`: filter by a single tag.
+* `q`: case-insensitive search in the task title.
+* `dueFrom`, `dueTo`: ISO datetimes for due date range.
+* `limit`, `offset`: pagination (default limit is 20).
 
 Swagger UI: `GET /api/docs`
 OpenAPI JSON: `GET /api/openapi.json`
@@ -65,7 +90,7 @@ BOOTSTRAP_SUPERADMIN_PASSWORD=admin123
 
 > **Important:** After the first successful bootstrapping, disable it in production:
 >
-> - set `ALLOW_BOOTSTRAP=false` and/or remove `BOOTSTRAP_*`.
+> * set `ALLOW_BOOTSTRAP=false` and/or remove `BOOTSTRAP_*`.
 
 **CORS:** If you use cookies or Authorization headers from the browser, set `CORS_ORIGIN` to an explicit origin (e.g., your frontend domain), not `*`.
 
@@ -113,10 +138,11 @@ npm test
 
 Stack: Vitest + Supertest + mongodb-memory-server.
 
-Test entry example: `src/features/auth/auth.test.ts` covers
+Test entry examples:
 
-- superadmin login → create user → user login → forbidden create
-- absence of public register route
+* `src/features/auth/auth.test.ts` — auth and user creation / permissions.
+* `src/features/projects/projects.test.ts` — project CRUD and access control.
+* `src/features/tasks/tasks.test.ts` — task CRUD, filters, pagination, and access control.
 
 To run a single test file:
 
@@ -130,7 +156,7 @@ To reduce logs during tests, `NODE_ENV=test` disables request logging.
 
 ## Project Structure (backend)
 
-```
+```text
 backend/
 ├── src/
 │   ├── app.ts                 # Express app wiring (middlewares, routes, Swagger, errors)
@@ -152,14 +178,24 @@ backend/
 │   │   └── swagger.ts         # mounts Swagger UI and openapi.json
 │   ├── features/
 │   │   ├── auth/
-│   │   │   ├── auth.schemas.ts    # Zod schemas (Role, LoginBody, MeResponse, LoginResponse)
-│   │   │   ├── auth.controller.ts # login/refresh/logout/me controllers
-│   │   │   └── auth.routes.ts     # routes + OpenAPI path registration
-│   │   └── users/
-│   │       ├── user.model.ts      # Mongoose User schema (hashes password)
-│   │       ├── users.schemas.ts    # Zod schemas (CreateUserBody, UserResponse)
-│   │       ├── users.controller.ts # create user (superadmin only)
-│   │       └── users.routes.ts     # routes + OpenAPI path registration
+│   │   │   ├── auth.schemas.ts     # Zod schemas (Role, LoginBody, MeResponse, LoginResponse)
+│   │   │   ├── auth.controller.ts  # login/refresh/logout/me controllers
+│   │   │   └── auth.routes.ts      # routes + OpenAPI path registration
+│   │   ├── users/
+│   │   │   ├── user.model.ts       # Mongoose User schema (hashes password)
+│   │   │   ├── users.schemas.ts    # Zod schemas (CreateUserBody, UserResponse)
+│   │   │   ├── users.controller.ts # create user (superadmin only)
+│   │   │   └── users.routes.ts     # routes + OpenAPI path registration
+│   │   ├── projects/
+│   │   │   ├── projects.model.ts       # Mongoose Project schema (ownerId, color, timestamps)
+│   │   │   ├── projects.schemas.ts     # Zod schemas (Create/UpdateProject, ProjectResponse)
+│   │   │   ├── projects.controller.ts  # project CRUD for owner/superadmin
+│   │   │   └── projects.routes.ts      # routes + OpenAPI path registration
+│   │   └── tasks/
+│   │       ├── tasks.model.ts          # Mongoose Task schema (status, priority, tags, dates)
+│   │       ├── tasks.schemas.ts        # Zod schemas (Create/UpdateTask, ListTasksQuery, TaskResponse)
+│   │       ├── tasks.controller.ts     # task CRUD, filters, and access checks
+│   │       └── tasks.routes.ts         # routes + OpenAPI path registration
 │   └── features/**/ *.test.ts      # integration tests
 ├── Dockerfile
 ├── eslint.config.js
@@ -172,29 +208,31 @@ backend/
 
 ## Middleware & Errors
 
-- `authGuard` reads `Authorization: Bearer <token>` and attaches `req.user`.
-- `requireRole('superadmin')` enforces admin-only endpoints.
-- `validate({ body/query/params })` parses parts of the request via Zod; on fail returns 400 with details.
-- Centralized `errorHandler` returns JSON; Zod errors get a structured `details` field.
+* `authGuard` reads `Authorization: Bearer <token>` and attaches `req.user`.
+* `requireRole('superadmin')` enforces admin-only endpoints.
+* `validate({ body/query/params })` parses parts of the request via Zod; on fail returns 400 with details.
+* Centralized `errorHandler` returns JSON; Zod errors get a structured `details` field.
 
 ---
 
 ## OpenAPI / Swagger
 
-- We use [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) to derive OpenAPI from Zod schemas and route registrations.
-- Access via:
-  - **UI**: `GET /api/docs`
-  - **JSON**: `GET /api/openapi.json`
+* We use [`@asteasolutions/zod-to-openapi`](https://github.com/asteasolutions/zod-to-openapi) to derive OpenAPI from Zod schemas and route registrations.
 
-- Global `bearerAuth` security is enabled, but `/auth/login`, `/auth/refresh`, `/auth/logout` explicitly override it (no bearer required).
+* Access via:
+
+  * **UI**: `GET /api/docs`
+  * **JSON**: `GET /api/openapi.json`
+
+* Global `bearerAuth` security is enabled, but `/auth/login`, `/auth/refresh`, `/auth/logout` explicitly override it (no bearer required).
 
 ---
 
 ## Deployment (overview)
 
-- CI builds/pushes Docker images to GHCR on tag push `v*`.
-- CD deploys to your server via SSH and `docker-compose.prod.yml` (Mongo + backend + Caddy).
-- Backend image: `ghcr.io/<owner>/todo-backend:<tag>` and `:latest`.
+* CI builds/pushes Docker images to GHCR on tag push `v*`.
+* CD deploys to your server via SSH and `docker-compose.prod.yml` (Mongo + backend + Caddy).
+* Backend image: `ghcr.io/<owner>/todo-backend:<tag>` and `:latest`.
 
 > See `.github/workflows/release.yml` and `infra/` for details.
 
@@ -202,9 +240,9 @@ backend/
 
 ## Security Notes
 
-- Rotate `JWT_*_SECRET` for production; keep them out of VCS.
-- Keep `ALLOW_BOOTSTRAP=false` in production after initial admin creation.
-- Use HTTPS (Caddy handles TLS) and limit `CORS_ORIGIN` to your frontend origin when cookies are used.
+* Rotate `JWT_*_SECRET` for production; keep them out of VCS.
+* Keep `ALLOW_BOOTSTRAP=false` in production after initial admin creation.
+* Use HTTPS (Caddy handles TLS) and limit `CORS_ORIGIN` to your frontend origin when cookies are used.
 
 ---
 
