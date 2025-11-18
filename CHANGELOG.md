@@ -14,11 +14,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * **Tasks**: you can now create tasks inside a project, list them, and update them.
 * **Task filters**: tasks can be filtered by status, priority, tag, search query (`q`), and due date range (`dueFrom`/`dueTo`), with pagination via `limit`/`offset`.
 * **Task endpoints**: added `POST /api/projects/{projectId}/tasks`, `GET /api/projects/{projectId}/tasks`, `GET /api/tasks/{id}`, and `PATCH /api/tasks/{id}`.
+* **Calendar**: added `GET /api/calendar` to return calendar events based on tasks that have `startAt` and/or `dueAt` within a given date range.
+* **Calendar filters**: calendar supports an optional `projectId` filter; regular users see events only from their own projects, while the **superadmin** can see events from all projects.
+* **Docs**: a **Calendar** section is available in `/api/docs`.
 
 ### Changed
 
 * OpenAPI: added the **Projects** tag and promoted request/response schemas to named components.
 * OpenAPI: added the **Tasks** tag and documented all task-related endpoints and schemas.
+* OpenAPI: added the **Calendar** tag and documented calendar query and event schemas.
 
 ### Technical (for devs)
 
@@ -28,6 +32,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * Mongoose `Task` model with indexes `{ projectId: 1, status: 1, updatedAt: -1 }`, `{ projectId: 1, dueAt: 1 }`, and `timestamps`.
 * Zod schemas registered as OpenAPI components for tasks: `TaskStatus`, `TaskPriority`, `TaskIdParam`, `ProjectTasksParam`, `CreateTaskBody`, `UpdateTaskBody`, `ListTasksQuery`, `TaskResponse`.
 * Integration tests (Vitest + Supertest + mongodb-memory-server) cover task CRUD, filters, pagination, and access control.
+* Zod schemas registered as OpenAPI components for calendar: `CalendarQuery`, `CalendarEvent`.
+* Calendar integration: `GET /api/calendar` reuses task and project access rules (owner vs superadmin) and is covered by integration tests (range filtering, project-level access control, and ownership checks).
 
 ---
 
