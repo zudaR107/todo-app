@@ -10,6 +10,7 @@ import usersRoutes from './features/users/users.routes.js';
 import projectsRoutes from './features/projects/projects.routes.js';
 import tasksRoutes from './features/tasks/tasks.routes.js';
 import calendarRoutes from './features/calendar/calendar.routes.js';
+import boardsRoutes from './features/boards/boards.routes.js';
 import { mountSwagger } from './docs/swagger.js';
 
 export function createApp() {
@@ -43,6 +44,7 @@ export function createApp() {
   app.use('/api/projects', projectsRoutes);
   app.use('/api', tasksRoutes);
   app.use('/api', calendarRoutes);
+  app.use('/api', boardsRoutes);
 
   // Docs
   mountSwagger(app);
