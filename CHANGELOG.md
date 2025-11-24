@@ -17,12 +17,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * **Calendar**: added `GET /api/calendar` to return calendar events based on tasks that have `startAt` and/or `dueAt` within a given date range.
 * **Calendar filters**: calendar supports an optional `projectId` filter; regular users see events only from their own projects, while the **superadmin** can see events from all projects.
 * **Docs**: a **Calendar** section is available in `/api/docs`.
+* **Boards**: added `GET /api/boards/{projectId}` to return a Kanban-style board for a project, grouping tasks into `todo`, `doing`, and `done` columns.
+* **Docs**: a **Boards** section is available in `/api/docs`.
 
 ### Changed
 
 * OpenAPI: added the **Projects** tag and promoted request/response schemas to named components.
 * OpenAPI: added the **Tasks** tag and documented all task-related endpoints and schemas.
 * OpenAPI: added the **Calendar** tag and documented calendar query and event schemas.
+* OpenAPI: added the **Boards** tag and documented the board endpoint and response schemas.
 
 ### Technical (for devs)
 
@@ -34,6 +37,8 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * Integration tests (Vitest + Supertest + mongodb-memory-server) cover task CRUD, filters, pagination, and access control.
 * Zod schemas registered as OpenAPI components for calendar: `CalendarQuery`, `CalendarEvent`.
 * Calendar integration: `GET /api/calendar` reuses task and project access rules (owner vs superadmin) and is covered by integration tests (range filtering, project-level access control, and ownership checks).
+* Zod schemas registered as OpenAPI components for boards: `BoardProjectParam`, `BoardColumn`, `BoardResponse`.
+* Boards integration: `GET /api/boards/{projectId}` reuses project access rules and is covered by integration tests (grouping by status, sort order by `updatedAt`, and access control for owner/superadmin/other users).
 
 ---
 
