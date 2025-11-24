@@ -13,6 +13,7 @@ Backend for the personal Todo application. Node.js + Express + TypeScript, Mongo
 * **Admin-only users:** `POST /api/users` creates users and is restricted to superadmin.
 * **Projects:** per-user projects for grouping tasks; each user sees only their own projects, while **superadmin** can manage any project.
 * **Tasks:** tasks live inside projects and support status, priority, tags, and optional dates; endpoints support filtering and pagination.
+* **Calendar:** range-based calendar endpoint that exposes tasks with `startAt` / `dueAt` as calendar events, with the same ownership rules as projects/tasks.
 * **Validation:** Zod schemas for requests/responses; runtime validation + shared types.
 * **Docs:** OpenAPI v3 with Swagger UI at `/api/docs`, JSON at `/api/openapi.json`.
 * **Error handling:** Central error middleware, Zod-aware 400s, consistent JSON.
@@ -58,6 +59,38 @@ Task list filters (`GET /api/projects/{projectId}/tasks`):
 * `q`: case-insensitive search in the task title.
 * `dueFrom`, `dueTo`: ISO datetimes for due date range.
 * `limit`, `offset`: pagination (default limit is 20).
+
+### Calendar
+
+* `GET /api/calendar` → returns calendar events derived from tasks that have `startAt` and/or `dueAt` in the specified range.
+
+Query parameters (all ISO8601 strings):
+
+* `from` (required): start of the range (inclusive).
+* `to` (required): end of the range (inclusive).
+* `projectId` (optional): if specified, restricts events to a single project and enforces project ownership rules.
+
+Response shape (per event):
+
+```jsonc
+{
+  "id": "...",          // task id
+  "title": "...",       // task title
+  "start": "ISO date",
+  "end": "ISO date",    // optional (when both startAt and dueAt are present)
+  "allDay": true,        // optional
+  "projectId": "...",
+  "status": "todo|doing|done",
+  "priority": "low|normal|high"
+}
+```
+
+Ownership rules:
+
+* Regular users see only events from their own projects.
+* `superadmin` can see events from all projects.
+
+---
 
 Swagger UI: `GET /api/docs`
 OpenAPI JSON: `GET /api/openapi.json`
@@ -143,6 +176,7 @@ Test entry examples:
 * `src/features/auth/auth.test.ts` — auth and user creation / permissions.
 * `src/features/projects/projects.test.ts` — project CRUD and access control.
 * `src/features/tasks/tasks.test.ts` — task CRUD, filters, pagination, and access control.
+* `src/features/calendar/calendar.test.ts` — calendar range queries, project filters, and ownership rules.
 
 To run a single test file:
 
@@ -191,12 +225,16 @@ backend/
 │   │   │   ├── projects.schemas.ts     # Zod schemas (Create/UpdateProject, ProjectResponse)
 │   │   │   ├── projects.controller.ts  # project CRUD for owner/superadmin
 │   │   │   └── projects.routes.ts      # routes + OpenAPI path registration
-│   │   └── tasks/
-│   │       ├── tasks.model.ts          # Mongoose Task schema (status, priority, tags, dates)
-│   │       ├── tasks.schemas.ts        # Zod schemas (Create/UpdateTask, ListTasksQuery, TaskResponse)
-│   │       ├── tasks.controller.ts     # task CRUD, filters, and access checks
-│   │       └── tasks.routes.ts         # routes + OpenAPI path registration
-│   └── features/**/ *.test.ts      # integration tests
+│   │   ├── tasks/
+│   │   │   ├── tasks.model.ts          # Mongoose Task schema (status, priority, tags, dates)
+│   │   │   ├── tasks.schemas.ts        # Zod schemas (Create/UpdateTask, ListTasksQuery, TaskResponse)
+│   │   │   ├── tasks.controller.ts     # task CRUD, filters, and access checks
+│   │   │   └── tasks.routes.ts         # routes + OpenAPI path registration
+│   │   ├── calendar/
+│   │   │   ├── calendar.schemas.ts     # Zod schemas (CalendarQuery, CalendarEvent)
+│   │   │   ├── calendar.controller.ts  # calendar aggregation over tasks
+│   │   │   └── calendar.routes.ts      # route + OpenAPI path registration
+│   │   └── **/*.test.ts                # integration tests per feature
 ├── Dockerfile
 ├── eslint.config.js
 ├── package.json
