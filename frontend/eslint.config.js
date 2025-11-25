@@ -14,19 +14,19 @@ export default defineConfig([
       js.configs.recommended,
       ...tseslint.configs.recommended,
       reactHooks.configs.flat.recommended,
-      reactRefresh.configs.vite
+      reactRefresh.configs.vite,
     ],
     plugins: { 'unused-imports': unusedImports },
     languageOptions: {
       ecmaVersion: 2020,
-      globals: globals.browser
+      globals: globals.browser,
     },
     rules: {
       'unused-imports/no-unused-imports': 'error',
       'unused-imports/no-unused-vars': [
         'warn',
-        { args: 'after-used', argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
-      ]
-    }
-  }
+        { args: 'after-used', argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
+  },
 ]);
