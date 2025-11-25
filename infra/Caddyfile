@@ -1,14 +1,12 @@
 todo.zudar.ru {
-	encode gzip
-	@api path /api/*
-	handle @api {
-		reverse_proxy backend:8080
-	}
-	handle {
-		# раздаём фронтенд как статичные файлы
-		root * /srv
-		file_server
-		# SPA fallback
-		try_files {path} /index.html
-	}
+  encode gzip
+
+  @api path /api/*
+  handle @api {
+    reverse_proxy backend:8080
+  }
+
+  handle {
+    reverse_proxy frontend:80
+  }
 }
