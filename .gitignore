@@ -193,3 +193,10 @@ id_ed25519.pub
 
 # Tasks
 /backend/TASKS.md
+/frontend/TASKS.md
+
+# Vite SSR (на всякий случай)
+frontend/dist-ssr/
+
+# Локальные конфиги
+*.local

@@ -20,23 +20,37 @@ jobs:
       packages: write
     outputs:
       image_backend: ${{ steps.image.outputs.IMAGE_BACKEND }}
+      image_frontend: ${{ steps.image.outputs.IMAGE_FRONTEND }}
       tag: ${{ steps.vars.outputs.TAG }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Resolve IMAGE_BACKEND
+      - name: Resolve image names
         id: image
         shell: bash
         run: |
           set -euo pipefail
           OWNER_LOWER="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+
           IMAGE_BACKEND="${{ vars.IMAGE_BACKEND }}"
           if [ -z "${IMAGE_BACKEND}" ]; then
             IMAGE_BACKEND="ghcr.io/${OWNER_LOWER}/todo-backend"
           fi
-          echo "IMAGE_BACKEND=${IMAGE_BACKEND}" >> "$GITHUB_OUTPUT"
+
+          IMAGE_FRONTEND="${{ vars.IMAGE_FRONTEND }}"
+          if [ -z "${IMAGE_FRONTEND}" ]; then
+            IMAGE_FRONTEND="ghcr.io/${OWNER_LOWER}/todo-frontend"
+          fi
+
+          {
+            echo "IMAGE_BACKEND=${IMAGE_BACKEND}"
+            echo "IMAGE_FRONTEND=${IMAGE_FRONTEND}"
+          } >> "$GITHUB_OUTPUT"
+
           echo "Using IMAGE_BACKEND=${IMAGE_BACKEND}"
+          echo "Using IMAGE_FRONTEND=${IMAGE_FRONTEND}"
 
       - name: Log in to GHCR (push)
         uses: docker/login-action@v3
@@ -48,9 +62,10 @@ jobs:
       - name: Set version tags
         id: vars
         run: |
-          echo "TAG=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          echo "TAG_LATEST=latest" >> $GITHUB_OUTPUT
-          echo "Building tags: ${{ steps.image.outputs.IMAGE_BACKEND }}:${GITHUB_REF_NAME} and :latest"
+          echo "TAG=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          echo "TAG_LATEST=latest" >> "$GITHUB_OUTPUT"
+          echo "Building backend tags: ${{ steps.image.outputs.IMAGE_BACKEND }}:${GITHUB_REF_NAME} and :latest"
+          echo "Building frontend tags: ${{ steps.image.outputs.IMAGE_FRONTEND }}:${GITHUB_REF_NAME} and :latest"
 
       - name: Build & push backend image
         uses: docker/build-push-action@v6
@@ -62,9 +77,20 @@ jobs:
             ${{ steps.image.outputs.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG }}
             ${{ steps.image.outputs.IMAGE_BACKEND }}:${{ steps.vars.outputs.TAG_LATEST }}
 
+      - name: Build & push frontend image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.image.outputs.IMAGE_FRONTEND }}:${{ steps.vars.outputs.TAG }}
+            ${{ steps.image.outputs.IMAGE_FRONTEND }}:${{ steps.vars.outputs.TAG_LATEST }}
+
   deploy:
     runs-on: ubuntu-latest
     needs: build-and-push
+
     steps:
       - name: Collect known_hosts for host
         id: kh
@@ -75,7 +101,11 @@ jobs:
           set -euo pipefail
           KH="$(ssh-keyscan -T 10 -p 22 "$SSH_HOST" 2>/dev/null)"
           [ -n "$KH" ] || { echo "ssh-keyscan empty"; exit 1; }
-          { echo "KNOWN_HOSTS<<EOF"; echo "$KH"; echo "EOF"; } >> "$GITHUB_OUTPUT"
+          {
+            echo "KNOWN_HOSTS<<EOF"
+            echo "$KH"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Setup CI SSH key & known_hosts
         uses: shimataro/ssh-key-action@v2
@@ -99,6 +129,7 @@ jobs:
     if: ${{ needs.deploy.result == 'success' }}
     permissions:
       contents: write
+
     steps:
       - name: Checkout (need git history & files)
         uses: actions/checkout@v4
@@ -113,7 +144,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Найдём предыдущий тег (если есть)
+          # Find previous tag (if any)
           PREV_TAG="$(git describe --tags --abbrev=0 "${TAG}^" 2>/dev/null || true)"
           echo "Current tag: ${TAG}"
           echo "Previous tag: ${PREV_TAG:-<none>}"
@@ -191,4 +222,5 @@ jobs:
 
       - name: Print release info
         run: |
-          echo "Released ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}"
+          echo "Released backend image:  ${{ needs.build-and-push.outputs.image_backend }}:${{ needs.build-and-push.outputs.tag }}"
+          echo "Released frontend image: ${{ needs.build-and-push.outputs.image_frontend }}:${{ needs.build-and-push.outputs.tag }}"
