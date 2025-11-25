@@ -8,6 +8,22 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+-
+
+### Changed
+
+-
+
+### Technical (for devs)
+
+-
+
+---
+
+## v0.1.7 - 2025-11-25
+
+### Added
+
 * **Projects**: you can now create projects, list your own, rename, and delete them.
 * **Permissions**: each user can see and manage only their own projects; the **superadmin** can manage any project.
 * **Docs**: a **Projects** section is available in `/api/docs`.
@@ -19,6 +35,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * **Docs**: a **Calendar** section is available in `/api/docs`.
 * **Boards**: added `GET /api/boards/{projectId}` to return a Kanban-style board for a project, grouping tasks into `todo`, `doing`, and `done` columns.
 * **Docs**: a **Boards** section is available in `/api/docs`.
+* **Frontend scaffold**: React + Vite + TypeScript frontend app with Tailwind CSS v4, React Query, and a minimal App component + test.
+* **Frontend tooling**: Vitest + Testing Library + `@testing-library/jest-dom` for React testing, ESLint + Prettier setup for the frontend.
+* **Frontend CI**: `frontend-ci` GitHub Actions workflow running lint, typecheck, tests, and build for the `frontend/` directory.
+* **Frontend Docker image**: Nginx-based Dockerfile for the frontend that serves the built SPA.
 
 ### Changed
 
@@ -26,6 +46,10 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * OpenAPI: added the **Tasks** tag and documented all task-related endpoints and schemas.
 * OpenAPI: added the **Calendar** tag and documented calendar query and event schemas.
 * OpenAPI: added the **Boards** tag and documented the board endpoint and response schemas.
+* Release pipeline: the `Release & Deploy` workflow now builds and pushes **both** backend and frontend images to GHCR and deploys them together.
+* Production infra: `docker-compose.prod.yml` and `Caddyfile` updated so that:
+  * `todo-frontend` serves the SPA on `/`,
+  * `/api/*` requests are reverse-proxied to `todo-backend` via Caddy.
 
 ### Technical (for devs)
 
@@ -39,6 +63,15 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 * Calendar integration: `GET /api/calendar` reuses task and project access rules (owner vs superadmin) and is covered by integration tests (range filtering, project-level access control, and ownership checks).
 * Zod schemas registered as OpenAPI components for boards: `BoardProjectParam`, `BoardColumn`, `BoardResponse`.
 * Boards integration: `GET /api/boards/{projectId}` reuses project access rules and is covered by integration tests (grouping by status, sort order by `updatedAt`, and access control for owner/superadmin/other users).
+* Frontend config:
+  * Vite + React + TypeScript with `tsconfig.app.json` / `tsconfig.test.json` split.
+  * Vitest config with `jsdom` environment and `setupTests.ts` wiring `@testing-library/jest-dom`.
+  * Flat ESLint config for the frontend with React, hooks, import, unused-imports, and Prettier integration.
+* CI:
+  * `backend-ci` runs lint, typecheck, tests, build, and Docker build for the backend.
+  * `frontend-ci` runs lint, typecheck, tests, and Vite build for the frontend.
+* Release pipeline:
+  * `release.yaml` resolves backend/frontend image names (`todo-backend` / `todo-frontend`), builds and pushes both images with `vX.Y.Z` and `latest` tags, and then triggers deployment over SSH to the production server.
 
 ---
 
