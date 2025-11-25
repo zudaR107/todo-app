@@ -12,7 +12,7 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
       - MONGO_URI=mongodb://mongo:27017/todo
     depends_on:
       - mongo
@@ -22,7 +22,7 @@ services:
   frontend:
     build: ../frontend
     environment:
-      - NODE_ENV=production
+      - NODE_ENV=development
     depends_on:
       - backend
 
@@ -37,8 +37,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - frontend
       - backend
+      - frontend
 
 volumes:
   mongo_data:
