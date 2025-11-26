@@ -1,8 +1,8 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @layer base {
   :root {
-    --color-bg: 15 23 42;       /* slate-900/950 */
+    --color-bg: 15 23 42; /* slate-900/950 */
     --color-surface: 15 23 42;
     --color-accent: 16 185 129; /* emerald-500 */
   }

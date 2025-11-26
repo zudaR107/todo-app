@@ -1,13 +1,13 @@
-import type { Me } from "../types/api";
+import type { Me } from '../types/api';
 
 let accessToken: string | null = null;
 
 export function setAccessToken(token: string | null) {
-    accessToken = token;
+  accessToken = token;
 }
 
 export function getAccessToken(): string | null {
-    return accessToken;
+  return accessToken;
 }
 
 export type AuthUser = Me;
