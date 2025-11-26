@@ -1,4 +1,8 @@
-todo.zudar.ru {
+{
+  auto_https off
+}
+
+:80 {
   encode gzip
 
   @api path /api/*
