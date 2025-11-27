@@ -11,7 +11,7 @@ export interface LoginResponse {
 }
 
 export interface AuthTokens {
-  acessToken: string;
+  accessToken: string;
 }
 
 export async function login(body: LoginBody): Promise<LoginResponse> {

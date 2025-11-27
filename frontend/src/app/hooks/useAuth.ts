@@ -7,12 +7,13 @@ export interface AuthContextValue {
   user: Me | null;
   status: AuthStatus;
   login: (user: Me, accessToken: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-export function useAuth() {
+export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
   if (!ctx) {
     throw new Error('useAuth must be used within AuthProvider');
