@@ -7,7 +7,7 @@ export interface LoginBody {
 }
 
 export interface LoginResponse {
-  acсessToken: string;
+  accessToken: string;
 }
 
 export interface AuthTokens {
