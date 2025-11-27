@@ -4,6 +4,6 @@ export function getApiBaseUrl(): string {
   if (typeof raw === 'string' && raw.trim().length > 0) {
     return raw.trim().replace(/\/+$/, '');
   }
-  
+
   return '/api';
 }

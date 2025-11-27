@@ -1,5 +1,5 @@
-import { getAccessToken } from "./auth-storage";
-import { getApiBaseUrl } from "./env";
+import { getAccessToken } from './auth-storage';
+import { getApiBaseUrl } from './env';
 
 export class ApiError extends Error {
   status: number;
@@ -62,4 +62,4 @@ export async function apiClient<TResponse>(
   }
 
   return data as TResponse;
-};
+}
