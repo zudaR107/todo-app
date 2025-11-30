@@ -1,7 +1,17 @@
 import type { PropsWithChildren } from 'react';
 import { Button } from '../../shared/ui/Button';
+import { useAuth } from '../hooks/useAuth';
 
 export function MainLayout({ children }: PropsWithChildren) {
+  const { user, logout, status } = useAuth();
+
+  const isLoading = status === 'idle' || status === 'loading';
+  const displayName = user?.displayName || user?.email || 'Гость';
+
+  const handleLogout = () => {
+    void logout();
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
@@ -28,8 +38,22 @@ export function MainLayout({ children }: PropsWithChildren) {
           </div>
           <div className="flex items-center gap-3 text-xs text-slate-400">
             <span>
-              Пользователь: <span className="font-medium text-slate-100">гость</span>
+              Пользователь:{' '}
+              <span className="font-medium text-slate-400">
+                {isLoading ? 'Проверяем сессию...' : displayName}
+              </span>
             </span>
+            {user ? (
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                className="border border-slate-800/60 px-3 py-1 text-xs"
+                onClick={handleLogout}
+              >
+                Выйти
+              </Button>
+            ) : null}
           </div>
         </header>
         <main className="flex-1 bg-[radial-gradient(circle_at_top,#1f2937,#020617)] px-4 py-4">
