@@ -2,12 +2,12 @@
 
 Frontend for a personal Todo application.
 
-* React + TypeScript + Vite (SPA)
-* Tailwind CSS v4 for styling
-* React Router for routing
-* React Query for data fetching/cache
-* Auth flow integrated with the backend JWT API (access token + httpOnly refresh cookie)
-* Vitest + React Testing Library for tests
+- React + TypeScript + Vite (SPA)
+- Tailwind CSS v4 for styling
+- React Router for routing
+- React Query for data fetching/cache
+- Auth flow integrated with the backend JWT API (access token + httpOnly refresh cookie)
+- Vitest + React Testing Library for tests
 
 ---
 
@@ -17,111 +17,105 @@ Frontend for a personal Todo application.
 
 The frontend talks to the backend auth endpoints:
 
-* `POST /api/auth/login` — login with email/password; backend sets httpOnly refresh cookie.
-* `POST /api/auth/refresh` — uses refresh cookie to obtain a new access token.
-* `GET  /api/auth/me` — returns the current user.
-* `POST /api/auth/logout` — clears the refresh cookie.
+- `POST /api/auth/login` — login with email/password; backend sets httpOnly refresh cookie.
+- `POST /api/auth/refresh` — uses refresh cookie to obtain a new access token.
+- `GET  /api/auth/me` — returns the current user.
+- `POST /api/auth/logout` — clears the refresh cookie.
 
 Frontend behavior:
 
-* Access token is stored **in memory only** via `shared/lib/auth-storage.ts`.
-* `AuthProvider` keeps:
+- Access token is stored **in memory only** via `shared/lib/auth-storage.ts`.
+- `AuthProvider` keeps:
+  - `user: Me | null` — current user info.
+  - `status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated'`.
 
-  * `user: Me | null` — current user info.
-  * `status: 'idle' | 'loading' | 'authenticated' | 'unauthenticated'`.
-* On mount, `AuthProvider`:
-
+- On mount, `AuthProvider`:
   1. Sets `status = 'loading'`.
   2. Calls `POST /api/auth/refresh` (with `credentials: 'include'`).
   3. On success: saves `accessToken`, calls `GET /api/auth/me`, sets `user` and `status = 'authenticated'`.
   4. On 401 or error: clears token and user, sets `status = 'unauthenticated'`.
-* `AuthGuard` protects private routes:
 
-  * While `status` is `idle | loading` → shows centered spinner.
-  * If `status = 'unauthenticated'` or `user` is null → redirect to `/login`.
-  * Otherwise → renders children.
+- `AuthGuard` protects private routes:
+  - While `status` is `idle | loading` → shows centered spinner.
+  - If `status = 'unauthenticated'` or `user` is null → redirect to `/login`.
+  - Otherwise → renders children.
 
 Login:
 
-* `/login` route renders `AuthLayout + LoginPage`.
-* `LoginForm`:
-
-  * Fields: `email`, `password`.
-  * Client-side validation via **Zod**.
-  * Uses `useLoginMutation()` (React Query + `AuthProvider.login`):
-
+- `/login` route renders `AuthLayout + LoginPage`.
+- `LoginForm`:
+  - Fields: `email`, `password`.
+  - Client-side validation via **Zod**.
+  - Uses `useLoginMutation()` (React Query + `AuthProvider.login`):
     1. `POST /api/auth/login`.
     2. On success, calls `GET /api/auth/me`.
     3. Updates `AuthProvider` state.
     4. Navigates to `/projects`.
-  * On `401` → shows "Неверный логин или пароль".
-  * On other errors → shows a generic error message.
+
+  - On `401` → shows "Неверный логин или пароль".
+  - On other errors → shows a generic error message.
 
 Logout:
 
-* Logout button is available in the `MainLayout` topbar on private pages.
-* Calls `POST /api/auth/logout`, then clears access token and user in `AuthProvider` and redirects the user to the login flow (via `AuthGuard`).
+- Logout button is available in the `MainLayout` topbar on private pages.
+- Calls `POST /api/auth/logout`, then clears access token and user in `AuthProvider` and redirects the user to the login flow (via `AuthGuard`).
 
 ### Routing & Layout
 
 Routing is implemented with `react-router-dom`:
 
-* Public route:
+- Public route:
+  - `/login` — login page (`AuthLayout + LoginPage`).
 
-  * `/login` — login page (`AuthLayout + LoginPage`).
-* Private routes (wrapped in `AuthGuard` + `MainLayout`):
-
-  * `/` → redirects to `/projects`.
-  * `/projects` — placeholder page for the list of projects.
-  * `/projects/:projectId/tasks` — placeholder page for project tasks.
-  * `/projects/:projectId/board` — placeholder page for Kanban board.
-  * `/calendar` — placeholder page for calendar view.
-  * `*` → redirects to `/projects`.
+- Private routes (wrapped in `AuthGuard` + `MainLayout`):
+  - `/` → redirects to `/projects`.
+  - `/projects` — placeholder page for the list of projects.
+  - `/projects/:projectId/tasks` — placeholder page for project tasks.
+  - `/projects/:projectId/board` — placeholder page for Kanban board.
+  - `/calendar` — placeholder page for calendar view.
+  - `*` → redirects to `/projects`.
 
 Layout components:
 
-* **`RootLayout`** — global background, font, and basic shell.
-* **`AuthLayout`** — centered card layout for `/login`.
-* **`MainLayout`** — application shell for authenticated users:
-
-  * Left sidebar (currently a stub; projects list will be added later).
-  * Topbar with app title and current user display name / email + Logout button.
-  * Main content area for pages.
+- **`RootLayout`** — global background, font, and basic shell.
+- **`AuthLayout`** — centered card layout for `/login`.
+- **`MainLayout`** — application shell for authenticated users:
+  - Left sidebar (currently a stub; projects list will be added later).
+  - Topbar with app title and current user display name / email + Logout button.
+  - Main content area for pages.
 
 ### UI Components (shared)
 
 Reusable UI components implemented so far:
 
-* `Button` — primary button component used across auth and layout.
-* `Input` — styled text input for forms.
-* `Card` — container for panels / sections.
-* `Spinner` — loading indicator.
-* `EmptyState` — placeholder for empty lists / states (currently used as building block for future pages).
+- `Button` — primary button component used across auth and layout.
+- `Input` — styled text input for forms.
+- `Card` — container for panels / sections.
+- `Spinner` — loading indicator.
+- `EmptyState` — placeholder for empty lists / states (currently used as building block for future pages).
 
 All styling is done via **Tailwind CSS v4** with a dark theme and accent colors configured in `index.css` and the shared UI components.
 
 ### HTTP Client & Config
 
-* `shared/lib/env.ts`:
+- `shared/lib/env.ts`:
+  - `getApiBaseUrl()` — resolves API base URL from `import.meta.env.VITE_API_BASE_URL` or falls back to `'/api'`.
 
-  * `getApiBaseUrl()` — resolves API base URL from `import.meta.env.VITE_API_BASE_URL` or falls back to `'/api'`.
-* `shared/lib/api-client.ts`:
+- `shared/lib/api-client.ts`:
+  - Wraps `fetch` with:
+    - automatic `Accept: application/json` header;
+    - JSON request bodies when `options.body` is provided;
+    - `Authorization: Bearer <accessToken>` header if a token is available in `auth-storage`;
+    - `credentials: 'include'` to send cookies (refresh token);
+    - `ApiError` thrown on non-2xx responses with `status` and `data`.
 
-  * Wraps `fetch` with:
-
-    * automatic `Accept: application/json` header;
-    * JSON request bodies when `options.body` is provided;
-    * `Authorization: Bearer <accessToken>` header if a token is available in `auth-storage`;
-    * `credentials: 'include'` to send cookies (refresh token);
-    * `ApiError` thrown on non-2xx responses with `status` and `data`.
-* `shared/lib/auth-storage.ts`:
-
-  * In-memory access token storage (`setAccessToken`, `getAccessToken`).
+- `shared/lib/auth-storage.ts`:
+  - In-memory access token storage (`setAccessToken`, `getAccessToken`).
 
 Backend base URL:
 
-* By default, frontend expects backend under `/api` relative to the origin (e.g. `http://localhost:8080/api` behind a reverse proxy).
-* For Docker/Nginx, you can set:
+- By default, frontend expects backend under `/api` relative to the origin (e.g. `http://localhost:8080/api` behind a reverse proxy).
+- For Docker/Nginx, you can set:
 
   ```bash
   VITE_API_BASE_URL="http://localhost:8080/api"
@@ -135,18 +129,17 @@ Tests are written with **Vitest** and **React Testing Library** (`jsdom` environ
 
 Currently covered:
 
-* `AuthProvider` behavior (refresh on mount, auth/unauth states).
-* `AuthGuard` logic (loading spinner, redirect to `/login`, rendering private content).
-* `LoginForm` behavior:
+- `AuthProvider` behavior (refresh on mount, auth/unauth states).
+- `AuthGuard` logic (loading spinner, redirect to `/login`, rendering private content).
+- `LoginForm` behavior:
+  - form rendering;
+  - client-side validation errors;
+  - successful login flow (mocked API);
+  - invalid credentials (`401`) error handling.
 
-  * form rendering;
-  * client-side validation errors;
-  * successful login flow (mocked API);
-  * invalid credentials (`401`) error handling.
-* `App` root component:
-
-  * basic render under providers;
-  * integration of router + auth context in tests via `renderWithProviders`.
+- `App` root component:
+  - basic render under providers;
+  - integration of router + auth context in tests via `renderWithProviders`.
 
 ---
 
@@ -168,8 +161,8 @@ By default, Vite serves the app at `http://localhost:5173`.
 
 Backend options:
 
-* **Option 1:** Run backend separately on `http://localhost:8080` and use Vite dev proxy to forward `/api` to the backend (configured in `vite.config.ts`).
-* **Option 2:** Use the `infra/docker-compose.dev.yml` stack at the repo root to start `mongo + backend + Caddy`, and point the frontend to `/api` proxied by Caddy.
+- **Option 1:** Run backend separately on `http://localhost:8080` and use Vite dev proxy to forward `/api` to the backend (configured in `vite.config.ts`).
+- **Option 2:** Use the `infra/docker-compose.dev.yml` stack at the repo root to start `mongo + backend + Caddy`, and point the frontend to `/api` proxied by Caddy.
 
 ### With Docker (frontend only)
 
@@ -206,9 +199,9 @@ npm test
 
 Vitest is configured with:
 
-* `jsdom` environment for React.
-* `setupTests.ts` wiring `@testing-library/jest-dom`.
-* `renderWithProviders` helper to wrap components in `QueryProvider` + `AuthProvider` + `BrowserRouter` during tests.
+- `jsdom` environment for React.
+- `setupTests.ts` wiring `@testing-library/jest-dom`.
+- `renderWithProviders` helper to wrap components in `QueryProvider` + `AuthProvider` + `BrowserRouter` during tests.
 
 ---
 
