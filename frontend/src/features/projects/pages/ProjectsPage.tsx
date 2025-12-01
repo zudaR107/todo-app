@@ -66,7 +66,7 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
               <Input
                 value={name}
                 onChange={(event) => setName(event.target.value)}
-                className="h-8 max-w-56 ext-sm"
+                className="h-8 max-w-56 text-sm"
               />
             ) : (
               <h2 className="truncate text-sm font-semibold text-slate-50">{project.name}</h2>
