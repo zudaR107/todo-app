@@ -40,7 +40,10 @@ export function MainLayout({ children }: PropsWithChildren) {
   const isAuthLoading = status === 'idle' || status === 'loading';
   const displayName = user?.displayName || user?.email || 'Гость';
 
-  const projectId = params.projectId;
+  const searchParams = new URLSearchParams(location.search);
+  const queryProjectId = searchParams.get('projectId') ?? undefined;
+
+  const projectId = params.projectId ?? queryProjectId;
   const currentProject =
     projectId && projects ? projects.find((project) => project.id === projectId) : undefined;
   const pathname = location.pathname;
@@ -56,7 +59,7 @@ export function MainLayout({ children }: PropsWithChildren) {
     subtitle = 'Управляйте рабочими, личными и учебными проектами.';
   } else if (hasProjectContext && currentProject) {
     title = currentProject.name;
-    subtitle = 'Задачи и доска выбранного проекта.';
+    subtitle = 'Задачи, доска и календарь выбранного проекта.';
   } else if (isCalendarPage) {
     title = 'Календарь';
     subtitle = 'Просмотр задач по датам начала и дедлайнам.';
@@ -66,7 +69,7 @@ export function MainLayout({ children }: PropsWithChildren) {
 
   const isTaskView = Boolean(projectId && pathname === ROUTES.projectTasks(projectId));
   const isBoardView = Boolean(projectId && pathname === ROUTES.projectBoard(projectId));
-  const isCalendarView = isCalendarPage;
+  const isCalendarView = isCalendarPage && Boolean(projectId);
 
   const handleLogout = () => {
     void logout();
@@ -114,13 +117,22 @@ export function MainLayout({ children }: PropsWithChildren) {
               <h1 className="text-sm font-semibold text-slate-50">{title}</h1>
             </div>
             {subtitle ? <p className="mt-1 text-xs text-slate-400">{subtitle}</p> : null}
+            {hasProjectContext ? (
+              <button
+                type="button"
+                onClick={() => navigate(ROUTES.projects)}
+                className="mt-1 text-[11px] text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
+              >
+                ← Все проекты
+              </button>
+            ) : null}
           </div>
 
           <div className="flex items-center gap-4">
             {hasProjectContext ? (
               <nav className="hidden items-center gap-1 rounded-full border border-slate-800 bg-slate-900/80 px-1 py-0.5 md:flex">
                 <TabButton isActive={isTaskView} onClick={goToTasks}>
-                  Список
+                  Задачи
                 </TabButton>
                 <TabButton isActive={isBoardView} onClick={goToBoard}>
                   Доска

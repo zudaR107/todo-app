@@ -204,7 +204,14 @@ export function ProjectsPage() {
         description="Разделяйте рабочие, личные и учебные задачи по отдельным проектам."
       />
 
-      <div ref={createFormRef} className="mb-2 max-w-md">
+      <div
+        ref={createFormRef}
+        className={cn(
+          'mb-4',
+          hasProjects ? 'max-w-2xl' : 'max-w-md',
+          'mx-auto',
+        )}
+      >
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-50">Новый проект</h2>
           <p className="text-xs text-slate-500">

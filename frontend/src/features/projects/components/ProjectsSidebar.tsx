@@ -94,6 +94,16 @@ export function ProjectsSidebar() {
             <p>Создайте первый проект, чтобы начать планировать задачи.</p>
           </div>
         )}
+
+        {showCreate ? (
+          <div className="mt-3 border-t border-slate-800/80 pt-3">
+            <ProjectCreateForm
+              variant="sidebar"
+              onCreated={handleCreated}
+              onCancel={() => setShowCreate(false)}
+            />
+          </div>
+        ) : null}
       </div>
 
       <Button
@@ -104,16 +114,6 @@ export function ProjectsSidebar() {
       >
         {showCreate ? 'Скрыть форму' : '+ Новый проект'}
       </Button>
-
-      {showCreate ? (
-        <div className="mt-3">
-          <ProjectCreateForm
-            variant="sidebar"
-            onCreated={handleCreated}
-            onCancel={() => setShowCreate(false)}
-          />
-        </div>
-      ) : null}
     </div>
   );
 }
