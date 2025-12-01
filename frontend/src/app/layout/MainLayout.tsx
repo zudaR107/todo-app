@@ -1,63 +1,160 @@
-import type { PropsWithChildren } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../shared/ui/Button';
 import { useAuth } from '../hooks/useAuth';
+import { ProjectsSidebar } from '../../features/projects/components/ProjectsSidebar';
+import { useProjectsQuery } from '../../features/projects/hooks';
+import { ROUTES } from '../routes';
+import { cn } from '../../shared/lib/cn';
+
+interface TabButtonProps {
+  isActive: boolean;
+  children: ReactNode;
+  onClick: () => void;
+}
+
+function TabButton({ isActive, children, onClick }: TabButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        'rounded-full px-3 py-1 text-[11px] font-medium transition-colors',
+        isActive
+          ? 'bg-emerald-500/20 text-emerald-300'
+          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-50',
+      )}
+    >
+      {children}
+    </button>
+  );
+}
 
 export function MainLayout({ children }: PropsWithChildren) {
   const { user, logout, status } = useAuth();
+  const { data: projects } = useProjectsQuery();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const params = useParams<{ projectId?: string }>();
 
-  const isLoading = status === 'idle' || status === 'loading';
+  const isAuthLoading = status === 'idle' || status === 'loading';
   const displayName = user?.displayName || user?.email || 'Гость';
+
+  const projectId = params.projectId;
+  const currentProject =
+    projectId && projects ? projects.find((project) => project.id === projectId) : undefined;
+  const pathname = location.pathname;
+  const isProjectsListPage = pathname === ROUTES.projects;
+  const isCalendarPage = pathname.startsWith(ROUTES.calendar);
+  const hasProjectContext = Boolean(projectId);
+
+  let title = 'todo-app';
+  let subtitle: string | null = 'Ежедневный планировщик на MERN + Typescript';
+
+  if (isProjectsListPage) {
+    title = 'Проекты';
+    subtitle = 'Управляйте рабочими, личными и учебными проектами.';
+  } else if (hasProjectContext && currentProject) {
+    title = currentProject.name;
+    subtitle = 'Задачи и доска выбранного проекта.';
+  } else if (isCalendarPage) {
+    title = 'Календарь';
+    subtitle = 'Просмотр задач по датам начала и дедлайнам.';
+  }
+
+  const projectColor = currentProject?.color || '#10b981';
+
+  const isTaskView = Boolean(projectId && pathname === ROUTES.projectTasks(projectId));
+  const isBoardView = Boolean(projectId && pathname === ROUTES.projectBoard(projectId));
+  const isCalendarView = isCalendarPage;
 
   const handleLogout = () => {
     void logout();
+  };
+
+  const goToTasks = () => {
+    if (projectId) {
+      navigate(ROUTES.projectTasks(projectId));
+    }
+  };
+
+  const goToBoard = () => {
+    if (projectId) {
+      navigate(ROUTES.projectBoard(projectId));
+    }
+  };
+
+  const goToCalendar = () => {
+    if (projectId) {
+      navigate({
+        pathname: ROUTES.calendar,
+        search: `?projectId=${projectId}`,
+      });
+    } else {
+      navigate(ROUTES.calendar);
+    }
   };
 
   return (
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside className="hidden w-64 border-r border-slate-800 bg-slate-950/80 p-4 md:flex md:flex-col">
-        <div className="mb-6">
-          <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/80">todo-app</p>
-          <h2 className="mt-2 text-sm font-semibold text-slate-50">Мои проекты</h2>
-          <p className="mt-1 text-xs text-slate-500">Список проектов появится здесь.</p>
-        </div>
-        <div className="flex-1 overflow-y-auto rounded-xl border border-dashed border-slate-800/80 bg-slate-950/40 p-3 text-xs text-slate-500">
-          Пока заглушка. Позже здесь будет список проектов.
-        </div>
-        <Button className="mt-4 w-full" size="sm">
-          + Новый проект
-        </Button>
+        <ProjectsSidebar />
       </aside>
 
       {/* Main area */}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 py-3">
           <div>
-            <h1 className="text-sm font-semibold text-slate-50">todo-app</h1>
-            <p className="text-xs text-slate-400">Ежедневный планировщик на MERN + Typescript</p>
+            <div className="flex items-center gap-2">
+              <span
+                className="inline-flex h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: hasProjectContext ? projectColor : '#10b981' }}
+              />
+              <h1 className="text-sm font-semibold text-slate-50">{title}</h1>
+            </div>
+            {subtitle ? <p className="mt-1 text-xs text-slate-400">{subtitle}</p> : null}
           </div>
-          <div className="flex items-center gap-3 text-xs text-slate-400">
-            <span>
-              Пользователь:{' '}
-              <span className="font-medium text-slate-400">
-                {isLoading ? 'Проверяем сессию...' : displayName}
-              </span>
-            </span>
-            {user ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                className="border border-slate-800/60 px-3 py-1 text-xs"
-                onClick={handleLogout}
-              >
-                Выйти
-              </Button>
+
+          <div className="flex items-center gap-4">
+            {hasProjectContext ? (
+              <nav className="hidden items-center gap-1 rounded-full border border-slate-800 bg-slate-900/80 px-1 py-0.5 md:flex">
+                <TabButton isActive={isTaskView} onClick={goToTasks}>
+                  Список
+                </TabButton>
+                <TabButton isActive={isBoardView} onClick={goToBoard}>
+                  Доска
+                </TabButton>
+                <TabButton isActive={isCalendarView} onClick={goToCalendar}>
+                  Календарь
+                </TabButton>
+              </nav>
             ) : null}
+
+            <div className="flex items-center gap-3 text-xs text-slate-400">
+              <span>
+                Пользователь:{' '}
+                <span className="font-medium text-slate-300">
+                  {isAuthLoading ? 'Проверяем сессию...' : displayName}
+                </span>
+              </span>
+              {user ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="border border-slate-800/60 px-3 py-1 text-xs"
+                  onClick={handleLogout}
+                >
+                  Выйти
+                </Button>
+              ) : null}
+            </div>
           </div>
         </header>
+
         <main className="flex-1 bg-[radial-gradient(circle_at_top,#1f2937,#020617)] px-4 py-4">
-          <div className="mx-auto h-full max-w-6xl">{children}</div>
+          <div className="mx-auto h-full max-w-6xl animate-fade-in-up">{children}</div>
         </main>
       </div>
     </div>
