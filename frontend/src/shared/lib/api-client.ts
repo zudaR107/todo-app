@@ -14,16 +14,11 @@ export class ApiError extends Error {
 
 export interface ApiClientOptions extends Omit<RequestInit, 'body'> {
   body?: unknown;
-  /**
-   * Отключить авто-refresh при 401 для конкретного запроса.
-   * Полезно для /auth/login, если хочется избежать лишнего запроса.
-   */
   skipAuthRefresh?: boolean;
 }
 
 const API_BASE_URL = getApiBaseUrl();
 
-// Один общий refresh на все параллельные 401.
 let refreshPromise: Promise<void> | null = null;
 
 async function refreshAccessToken(): Promise<void> {
@@ -36,26 +31,23 @@ async function refreshAccessToken(): Promise<void> {
         headers: {
           Accept: 'application/json',
         },
-        credentials: 'include', // нужен refresh-cookie
+        credentials: 'include',
       });
 
       const contentType = response.headers.get('Content-Type') ?? '';
-      let data: any;
+      let data: unknown;
 
       if (contentType.includes('application/json')) {
-        data = await response.json();
+        data = (await response.json()) as unknown;
       } else {
         const text = await response.text();
         data = text || null;
       }
 
       if (!response.ok) {
-        // Если refresh не удался (нет cookie / протух), сессия точно умерла.
         if (response.status === 401 || response.status === 403) {
-          // Чистим access-токен
           setAccessToken(null);
 
-          // Принудительно отправляем пользователя на /login
           if (typeof window !== 'undefined') {
             const isAlreadyOnLogin = window.location.pathname.startsWith('/login');
             if (!isAlreadyOnLogin) {
@@ -67,13 +59,12 @@ async function refreshAccessToken(): Promise<void> {
         throw new ApiError(response.status, data);
       }
 
-      const accessToken =
-        data && typeof data.accessToken === 'string' ? data.accessToken : null;
+      const parsed = data as { accessToken?: string } | null;
+      const accessToken = parsed?.accessToken ?? null;
 
       if (accessToken) {
         setAccessToken(accessToken);
       } else {
-        // На всякий случай, если сервер не прислал token.
         setAccessToken(null);
       }
     })().finally(() => {
@@ -110,7 +101,6 @@ export async function apiClient<TResponse>(
 
     const token = getAccessToken();
 
-    // НЕ добавляем Authorization только для /auth/login и /auth/refresh
     if (!isLoginEndpoint && !isRefreshEndpoint && token && !headers.has('Authorization')) {
       headers.set('Authorization', `Bearer ${token}`);
     }
@@ -146,7 +136,7 @@ export async function apiClient<TResponse>(
       error instanceof ApiError &&
       error.status === 401 &&
       !skipAuthRefresh &&
-      !isRefreshEndpoint && // для самого /auth/refresh retry делать нельзя
+      !isRefreshEndpoint &&
       !hasRetried
     ) {
       hasRetried = true;
@@ -154,11 +144,9 @@ export async function apiClient<TResponse>(
       try {
         await refreshAccessToken();
       } catch {
-        // refreshAccessToken сам сделает redirect на /login при 401/403
         throw error;
       }
 
-      // refresh прошёл успешно → повторяем запрос с новым access-токеном
       return await doRequest();
     }
 

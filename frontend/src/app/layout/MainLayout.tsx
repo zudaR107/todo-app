@@ -32,10 +32,7 @@ function TabButton({ isActive, children, onClick }: TabButtonProps) {
 
 export function MainLayout({ children }: PropsWithChildren) {
   const { user, logout, status } = useAuth();
-  const {
-    data: projects,
-    isLoading: isProjectsLoading,
-  } = useProjectsQuery();
+  const { data: projects, isLoading: isProjectsLoading } = useProjectsQuery();
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -44,8 +41,6 @@ export function MainLayout({ children }: PropsWithChildren) {
   const isAuthLoading = status === 'idle' || status === 'loading';
   const displayName = user?.displayName || user?.email || 'Гость';
 
-  // projectId может приехать как параметр маршрута (/projects/:projectId/...)
-  // или как query (?projectId=...), например для календаря
   const searchParams = new URLSearchParams(location.search);
   const queryProjectId = searchParams.get('projectId') ?? undefined;
   const projectId = params.projectId ?? queryProjectId;
@@ -57,10 +52,7 @@ export function MainLayout({ children }: PropsWithChildren) {
   const isCalendarPage = pathname.startsWith(ROUTES.calendar);
   const hasProjectContext = Boolean(projectId);
 
-  // Если в урле есть projectId, но такого проекта в данных уже нет (удалён / недоступен) —
-  // после загрузки списка проектов отправляем пользователя обратно на список проектов.
-  const projectNotFound =
-    hasProjectContext && !isProjectsLoading && projects && !currentProject;
+  const projectNotFound = hasProjectContext && !isProjectsLoading && projects && !currentProject;
 
   useEffect(() => {
     if (projectNotFound) {
@@ -68,10 +60,6 @@ export function MainLayout({ children }: PropsWithChildren) {
     }
   }, [projectNotFound, navigate]);
 
-  // Заголовок и сабтайтл topbar:
-  // - по умолчанию — "todo-app"
-  // - в контексте проекта — имя проекта
-  // - глобальный календарь без projectId — отдельный заголовок
   let title = 'todo-app';
   let subtitle: string | null = 'Ежедневный планировщик на MERN + Typescript';
 
@@ -125,7 +113,7 @@ export function MainLayout({ children }: PropsWithChildren) {
 
       {/* Main area */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 py-3">
           <div>
             <div className="flex items-center gap-2">
               <span

@@ -18,11 +18,9 @@ export function RequireProjects({ children }: PropsWithChildren) {
     );
   }
 
-  // Если запрос успешен, но проектов нет — принудительно отправляем на страницу проектов
   if (!hasProjects && !isError) {
     return <Navigate to={ROUTES.projects} replace state={{ from: location }} />;
   }
 
-  // Если была ошибка — не перехватываем, пусть страница сама покажет свою ошибку
   return <>{children}</>;
 }

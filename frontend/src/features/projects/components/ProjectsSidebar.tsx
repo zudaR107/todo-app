@@ -36,9 +36,7 @@ export function ProjectsSidebar() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="mb-6">
-        <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/80">
-          todo-app
-        </p>
+        <p className="text-xs uppercase tracking-[0.2em] text-emerald-400/80">todo-app</p>
         <h2 className="mt-2 text-sm font-semibold text-slate-50">Мои проекты</h2>
         <p className="mt-1 text-xs text-slate-500">
           {hasProjects
