@@ -1,8 +1,11 @@
+// src/app/router.tsx
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthLayout } from './layout/AuthLayout';
 import { MainLayout } from './layout/MainLayout';
 import { ROUTES } from './routes';
 import { AuthGuard } from './AuthGuard';
+import { RequireProjects } from './RequireProjects';
+
 import { LoginPage } from '../features/auth/pages/LoginPage';
 import { ProjectsPage } from '../features/projects/pages/ProjectsPage';
 import { ProjectTasksPage } from '../features/tasks/pages/ProjectTasksPage';
@@ -13,6 +16,7 @@ export function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* --- Публичный логин --- */}
         <Route
           path={ROUTES.login}
           element={
@@ -22,6 +26,7 @@ export function AppRouter() {
           }
         />
 
+        {/* --- Страница проектов (можно даже без RequireProjects, здесь проекты как раз создаются) --- */}
         <Route
           path={ROUTES.projects}
           element={
@@ -33,41 +38,50 @@ export function AppRouter() {
           }
         />
 
+        {/* --- Страница задач конкретного проекта --- */}
         <Route
           path={ROUTES.projectTasks()}
           element={
             <AuthGuard>
               <MainLayout>
-                <ProjectTasksPage />
+                <RequireProjects>
+                  <ProjectTasksPage />
+                </RequireProjects>
               </MainLayout>
             </AuthGuard>
           }
         />
 
+        {/* --- Доска проекта --- */}
         <Route
           path={ROUTES.projectBoard()}
           element={
             <AuthGuard>
               <MainLayout>
-                <BoardPage />
+                <RequireProjects>
+                  <BoardPage />
+                </RequireProjects>
               </MainLayout>
             </AuthGuard>
           }
         />
 
+        {/* --- Календарь --- */}
         <Route
           path={ROUTES.calendar}
           element={
             <AuthGuard>
               <MainLayout>
-                <CalendarPage />
+                <RequireProjects>
+                  <CalendarPage />
+                </RequireProjects>
               </MainLayout>
             </AuthGuard>
           }
         />
 
+        {/* --- Редиректы по умолчанию --- */}
         <Route path="/" element={<Navigate to={ROUTES.projects} replace />} />
-
         <Route path="*" element={<Navigate to={ROUTES.projects} replace />} />
       </Routes>
     </BrowserRouter>

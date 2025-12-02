@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../../../shared/ui/PageHeader';
 import { Card } from '../../../shared/ui/Card';
@@ -7,7 +7,11 @@ import { EmptyState } from '../../../shared/ui/EmptyState';
 import { Spinner } from '../../../shared/ui/Spinner';
 import { ErrorBanner } from '../../../shared/ui/ErrorBanner';
 import { ProjectCreateForm } from '../components/ProjectCreateForm';
-import { useDeleteProjectMutation, useProjectsQuery, useUpdateProjectMutation } from '../hooks';
+import {
+  useDeleteProjectMutation,
+  useProjectsQuery,
+  useUpdateProjectMutation,
+} from '../hooks';
 import type { Project, UpdateProjectBody } from '../api';
 import { ROUTES } from '../../../app/routes';
 import { Input } from '../../../shared/ui/Input';
@@ -38,7 +42,9 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
   };
 
   const handleDelete = async () => {
-    const confirmed = window.confirm(`Удалить проект «${project.name}»? Это действие необратимо.`);
+    const confirmed = window.confirm(
+      `Удалить проект «${project.name}»? Это действие необратимо.`,
+    );
     if (!confirmed) {
       return;
     }
@@ -69,7 +75,9 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
                 className="h-8 max-w-56 text-sm"
               />
             ) : (
-              <h2 className="truncate text-sm font-semibold text-slate-50">{project.name}</h2>
+              <h2 className="truncate text-sm font-semibold text-slate-50">
+                {project.name}
+              </h2>
             )}
           </div>
           <p className="mt-2 text-xs text-slate-500">Создан {createdLabel}</p>
@@ -89,7 +97,9 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
       {isEditing ? (
         <div className="space-y-2">
           <div className="space-y-1">
-            <span className="block text-xs font-medium text-slate-200">Цвет проекта</span>
+            <span className="block text-xs font-medium text-slate-200">
+              Цвет проекта
+            </span>
             <div className="flex items-center gap-3">
               <input
                 type="color"
@@ -99,7 +109,7 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
                 className="h-7 w-7 cursor-pointer rounded-md border border-slate-700 bg-slate-900/80"
               />
               <span className="text-xs text-slate-400">
-                Цвет используется как индикатор проекта в разных представлениях.
+                Цвет используется как индикатор проекта в списках и календаре.
               </span>
             </div>
           </div>
@@ -141,8 +151,8 @@ function ProjectCard({ project, onOpen, onUpdate, onDelete, isBusy }: ProjectCar
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-slate-500">
             {project.color
-              ? 'Проект с настроенным цветом.'
-              : 'Цвет не задан - используется цвет по умолчанию.'}
+              ? 'Цвет проекта настроен. Используется как индикатор в списках и календаре.'
+              : 'Цвет не задан — используется цвет по умолчанию.'}
           </p>
           <div className="flex items-center gap-1">
             <Button
@@ -180,8 +190,6 @@ export function ProjectsPage() {
 
   const { data: projects, isLoading, isError, refetch } = projectsQuery;
 
-  const createFormRef = useRef<HTMLDivElement | null>(null);
-
   const handleOpen = (id: string) => {
     navigate(ROUTES.projectTasks(id));
   };
@@ -199,19 +207,15 @@ export function ProjectsPage() {
 
   return (
     <div className="space-y-4">
+      {/* На странице проектов PageHeader отвечает за заголовок,
+          а topbar показывает общий контекст приложения (todo-app). */}
       <PageHeader
         title="Проекты"
         description="Разделяйте рабочие, личные и учебные задачи по отдельным проектам."
       />
 
-      <div
-        ref={createFormRef}
-        className={cn(
-          'mb-4',
-          hasProjects ? 'max-w-2xl' : 'max-w-md',
-          'mx-auto',
-        )}
-      >
+      {/* Форма всегда одного размера по центру, без скачков при появлении первого проекта */}
+      <div className={cn('mb-4 mx-auto max-w-2xl')}>
         <Card className="space-y-3">
           <h2 className="text-sm font-semibold text-slate-50">Новый проект</h2>
           <p className="text-xs text-slate-500">
@@ -239,18 +243,10 @@ export function ProjectsPage() {
           <EmptyState
             title="Проектов пока нет."
             description="Создайте первый проект, чтобы начать планировать задачи и видеть их в списке и на доске."
-            actionLabel="Создать проект"
-            onActionClick={() => {
-              createFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              const input = createFormRef.current?.querySelector(
-                'input[name="name"]',
-              ) as HTMLInputElement | null;
-              input?.focus();
-            }}
           />
         </div>
       ) : (
-        <div className={cn('mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3')}>
+        <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-3">
           {projects!.map((project) => (
             <ProjectCard
               key={project.id}

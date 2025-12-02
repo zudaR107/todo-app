@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { useEffect, type PropsWithChildren, type ReactNode } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../shared/ui/Button';
 import { useAuth } from '../hooks/useAuth';
@@ -32,7 +32,11 @@ function TabButton({ isActive, children, onClick }: TabButtonProps) {
 
 export function MainLayout({ children }: PropsWithChildren) {
   const { user, logout, status } = useAuth();
-  const { data: projects } = useProjectsQuery();
+  const {
+    data: projects,
+    isLoading: isProjectsLoading,
+  } = useProjectsQuery();
+
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams<{ projectId?: string }>();
@@ -40,27 +44,41 @@ export function MainLayout({ children }: PropsWithChildren) {
   const isAuthLoading = status === 'idle' || status === 'loading';
   const displayName = user?.displayName || user?.email || 'Гость';
 
+  // projectId может приехать как параметр маршрута (/projects/:projectId/...)
+  // или как query (?projectId=...), например для календаря
   const searchParams = new URLSearchParams(location.search);
   const queryProjectId = searchParams.get('projectId') ?? undefined;
-
   const projectId = params.projectId ?? queryProjectId;
+
   const currentProject =
     projectId && projects ? projects.find((project) => project.id === projectId) : undefined;
+
   const pathname = location.pathname;
-  const isProjectsListPage = pathname === ROUTES.projects;
   const isCalendarPage = pathname.startsWith(ROUTES.calendar);
   const hasProjectContext = Boolean(projectId);
 
+  // Если в урле есть projectId, но такого проекта в данных уже нет (удалён / недоступен) —
+  // после загрузки списка проектов отправляем пользователя обратно на список проектов.
+  const projectNotFound =
+    hasProjectContext && !isProjectsLoading && projects && !currentProject;
+
+  useEffect(() => {
+    if (projectNotFound) {
+      navigate(ROUTES.projects, { replace: true });
+    }
+  }, [projectNotFound, navigate]);
+
+  // Заголовок и сабтайтл topbar:
+  // - по умолчанию — "todo-app"
+  // - в контексте проекта — имя проекта
+  // - глобальный календарь без projectId — отдельный заголовок
   let title = 'todo-app';
   let subtitle: string | null = 'Ежедневный планировщик на MERN + Typescript';
 
-  if (isProjectsListPage) {
-    title = 'Проекты';
-    subtitle = 'Управляйте рабочими, личными и учебными проектами.';
-  } else if (hasProjectContext && currentProject) {
+  if (hasProjectContext && currentProject) {
     title = currentProject.name;
     subtitle = 'Задачи, доска и календарь выбранного проекта.';
-  } else if (isCalendarPage) {
+  } else if (isCalendarPage && !hasProjectContext) {
     title = 'Календарь';
     subtitle = 'Просмотр задач по датам начала и дедлайнам.';
   }
@@ -99,15 +117,15 @@ export function MainLayout({ children }: PropsWithChildren) {
   };
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Sidebar */}
-      <aside className="hidden w-64 border-r border-slate-800 bg-slate-950/80 p-4 md:flex md:flex-col">
+      <aside className="hidden h-full w-64 shrink-0 border-r border-slate-800 bg-slate-950/80 p-4 md:flex md:flex-col">
         <ProjectsSidebar />
       </aside>
 
       {/* Main area */}
-      <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 py-3">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <header className="flex flex-shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950/80 px-4 py-3">
           <div>
             <div className="flex items-center gap-2">
               <span
@@ -117,19 +135,22 @@ export function MainLayout({ children }: PropsWithChildren) {
               <h1 className="text-sm font-semibold text-slate-50">{title}</h1>
             </div>
             {subtitle ? <p className="mt-1 text-xs text-slate-400">{subtitle}</p> : null}
-            {hasProjectContext ? (
-              <button
-                type="button"
-                onClick={() => navigate(ROUTES.projects)}
-                className="mt-1 text-[11px] text-slate-500 underline-offset-2 hover:text-slate-300 hover:underline"
-              >
-                ← Все проекты
-              </button>
-            ) : null}
           </div>
 
-          <div className="flex items-center gap-4">
-            {hasProjectContext ? (
+          <div className="flex items-center gap-3">
+            {hasProjectContext && (
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                className="px-3 py-1 text-[11px]"
+                onClick={() => navigate(ROUTES.projects)}
+              >
+                ← Все проекты
+              </Button>
+            )}
+
+            {hasProjectContext && (
               <nav className="hidden items-center gap-1 rounded-full border border-slate-800 bg-slate-900/80 px-1 py-0.5 md:flex">
                 <TabButton isActive={isTaskView} onClick={goToTasks}>
                   Задачи
@@ -141,7 +162,7 @@ export function MainLayout({ children }: PropsWithChildren) {
                   Календарь
                 </TabButton>
               </nav>
-            ) : null}
+            )}
 
             <div className="flex items-center gap-3 text-xs text-slate-400">
               <span>
@@ -165,7 +186,7 @@ export function MainLayout({ children }: PropsWithChildren) {
           </div>
         </header>
 
-        <main className="flex-1 bg-[radial-gradient(circle_at_top,#1f2937,#020617)] px-4 py-4">
+        <main className="flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top,#1f2937,#020617)] px-4 py-4">
           <div className="mx-auto h-full max-w-6xl animate-fade-in-up">{children}</div>
         </main>
       </div>
