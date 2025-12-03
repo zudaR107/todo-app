@@ -15,6 +15,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
   * Implemented `RootLayout`, `AuthLayout`, and `MainLayout` for consistent page structure.
   * Added placeholder pages: `LoginPage`, `ProjectsPage`, `ProjectTasksPage`, `BoardPage`, `CalendarPage`.
   * Added shared UI primitives: `Button`, `Input`, `Card`, `Spinner`, `EmptyState`.
+
 * **Frontend auth flow**:
 
   * Implemented `shared/lib/env.ts` with `getApiBaseUrl()` and `vite-env.d.ts` typing for `import.meta.env`.
@@ -49,6 +50,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
     * shows field-level validation errors;
     * on submit, calls `useLoginMutation`, and on success navigates to `/projects`;
     * shows a friendly error message for 401 (`"Неверный логин или пароль"`) and a generic error for other failures.
+
 * **Frontend routing**:
 
   * `AppRouter` now uses `AuthGuard` for all private routes and composes them under a shared `MainLayout` + `Outlet`:
@@ -60,6 +62,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
     * `/projects/:projectId/board` → `BoardPage` (private);
     * `/calendar` → `CalendarPage` (private);
     * `*` → redirect to `/projects`.
+
 * **Testing for auth flow**:
 
   * `renderWithProviders` helper under `src/test/utils` to render components with `QueryProvider` and `AuthProvider`.
@@ -82,14 +85,60 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
     * mock `authApi.refresh` + `authApi.me` to simulate an authenticated session;
     * assert that the root layout and main content render correctly.
 
+* **Frontend projects & layout integration**:
+
+  * Implemented the real projects feature in the frontend around the `/api/projects` endpoints: `features/projects/api.ts`, `features/projects/hooks.ts`, `ProjectsPage.tsx`, `ProjectCreateForm.tsx`, and `ProjectsSidebar.tsx`.
+  * The `/projects` page now shows the current user's projects as cards with a color dot, creation date, inline rename + color picker, and a destructive delete action with confirmation.
+  * The left sidebar inside `MainLayout` renders the same list of projects with an active highlight for the currently selected project and uses the project color as an indicator.
+  * Projects can be created both from the main `/projects` page and directly from the sidebar via a compact "New project" form; both code paths share the same `ProjectCreateForm` component.
+
+* **Frontend UI building blocks**:
+
+  * Added `PageHeader` for consistent page-level titles/descriptions and actions.
+  * Added `ErrorBanner` for concise error messaging with an optional "Retry" action, used across the projects views.
+
+* **Frontend project guards**:
+
+  * Introduced `app/RequireProjects.tsx` to guard project-dependent routes.
+  * `RequireProjects` uses `useProjectsQuery()` and:
+
+    * shows a loading state while projects are being fetched;
+    * lets `/projects` render even when there are no projects;
+    * for project-specific routes and the calendar view, shows an inline empty-state CTA when the user has no projects yet and provides a shortcut back to `/projects`.
+  * This prevents users from landing on `/projects/:projectId/tasks`, `/projects/:projectId/board`, or `/calendar` via manual URL entry when they do not have any projects.
+
 ### Changed
 
 * Frontend routing was refactored so all private routes share a common `AuthGuard` + `MainLayout` wrapper, reducing duplication and ensuring consistent auth checks.
+
 * Local dev setup updated so that:
 
   * `npm run dev` uses Vite dev server with a proxy to `http://localhost:8080/api` for `/api` requests;
   * Dockerized frontend (Nginx) can be built with a `VITE_API_BASE_URL` environment variable for talking to a running backend.
+
 * Nginx configuration split into `nginx.dev.conf` (no aggressive caching) and `nginx.prod.conf` (cache-busting for static assets) to avoid stale bundles during development and still benefit from caching in production.
+
+* **Frontend layout & projects UX**:
+
+  * `MainLayout` now derives the current project from `useProjectsQuery()` combined with route params and query string (`projectId` and `?projectId=`) and displays the **project name** and color indicator in the header instead of the raw project id.
+  * The header now includes a prominent "← All projects" secondary button that navigates back to `/projects` from any project-specific view.
+  * The overall layout uses `h-screen` with split scrolling: the sidebar and the main content scroll independently, and the "+ New project" button in the sidebar stays visible even with long project lists.
+  * On `/projects`, the "New project" form is centered with a fixed max width, regardless of whether any projects already exist; when the list is empty, the empty state no longer renders a duplicate "Create project" button — the form itself is the primary call to action.
+
+* **Frontend auth & token refresh**:
+
+  * `shared/lib/api-client.ts` now performs **automatic access-token refresh** on `401` responses for non-auth endpoints by calling `POST /api/auth/refresh`, updating the in-memory access token, and retrying the original request once.
+  * If the refresh request itself fails with `401`/`403` or the refresh cookie is missing/expired, the client clears the in-memory token and performs a hard redirect to `/login`, so stale tabs do not stay on broken private pages.
+  * This keeps the existing `AuthProvider` behavior (initial refresh on mount) but makes token expiry transparent during normal usage and fails fast to the login screen when the session can no longer be recovered.
+
+* **Route-level project requirements**:
+
+  * The router now wraps project tasks, board, and calendar routes with `RequireProjects`:
+
+    * `/projects/:projectId/tasks`;
+    * `/projects/:projectId/board`;
+    * `/calendar` (optionally scoped by `?projectId=`).
+  * This ensures these views only render when the current user has at least one project and provides a clear "Create your first project" path otherwise.
 
 ### Technical (for devs)
 
@@ -97,6 +146,7 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
 
   * `getApiBaseUrl()` reads `import.meta.env.VITE_API_BASE_URL`, trims it, strips trailing slashes, and falls back to `/api`.
   * `vite-env.d.ts` declares the `ImportMetaEnv` shape with a typed `VITE_API_BASE_URL`.
+
 * `shared/lib/api-client.ts`:
 
   * `apiClient<T>()` wraps `fetch` with:
@@ -106,29 +156,57 @@ and the project adheres to [Semantic Versioning](https://semver.org/).
     * `Authorization: Bearer <accessToken>` header when a token is present in `auth-storage`;
     * `credentials: 'include'` so that refresh cookies are sent automatically;
     * `ApiError` thrown for non-OK responses with attached `status` and parsed payload.
+  * It now also:
+
+    * intercepts `401` responses for non-auth endpoints, calls `/api/auth/refresh`, updates the in-memory access token, and retries the original request once;
+    * on refresh failure (missing/expired cookie or `401/403`), clears auth state and redirects the browser to `/login` to force an explicit re-authentication.
+
 * `shared/lib/auth-storage.ts`:
 
   * keeps `accessToken` in a module variable (in-memory only, no localStorage/cookies);
   * exports `setAccessToken()` / `getAccessToken()` and `AuthUser` type aliased to backend `Me` shape.
+
 * `app/hooks/useAuth.ts`:
 
   * defines `AuthStatus` union and `AuthContextValue` interface;
   * exports a strongly-typed `useAuth()` hook that throws if used outside `AuthProvider`.
+
 * `app/providers/AuthProvider.tsx`:
 
   * orchestrates `refresh()` + `me()` calls on mount via `useEffect`;
   * handles all branches of the auth state machine: `idle` → `loading` → `authenticated` / `unauthenticated`;
   * exposes `login`, `logout`, and `refreshSession` to the rest of the app.
+
 * `app/AuthGuard.tsx`:
 
   * centralizes access control logic for private routes (loading → spinner, unauthenticated → redirect, authenticated → children).
+
 * `features/auth/api.ts` and `features/auth/hooks.ts`:
 
   * encapsulate all auth-related HTTP calls and React Query mutations/flows, keeping components thin.
+
 * Frontend tests:
 
   * use Vitest + Testing Library with `jsdom` and `@testing-library/jest-dom` from `setupTests.ts`;
   * mock `react-router-dom` navigation and `features/auth/api` functions where needed to simulate backend behavior.
+
+* `app/RequireProjects.tsx`:
+
+  * centralizes the "you must have at least one project" rule for project-specific and calendar routes;
+  * reuses `useProjectsQuery()` so the projects list and sidebar stay in sync;
+  * renders a simple loading state and an `EmptyState` with a CTA to go to `/projects` and create the first project when needed.
+
+* `features/projects/*`:
+
+  * `features/projects/api.ts` and `features/projects/hooks.ts` encapsulate HTTP calls and React Query hooks for `/api/projects`.
+  * `ProjectsPage.tsx` implements the main projects screen with the create form and project cards (rename, color, delete).
+  * `components/ProjectCreateForm.tsx` and `components/ProjectsSidebar.tsx` provide reusable project creation and navigation UI.
+  * `ProjectsPage.test.tsx` is scaffolded as a starting point for projects-related tests.
+
+* `shared/ui`:
+
+  * `PageHeader.tsx` standardizes page titles and descriptions across screens.
+  * `ErrorBanner.tsx` encapsulates inline error display with an optional retry callback.
 
 ---
 
