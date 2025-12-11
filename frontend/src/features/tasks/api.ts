@@ -48,8 +48,8 @@ export interface UpdateTaskBody {
   priority?: TaskPriority;
   tags?: string[];
   startAt?: string;
-  dueAt?: string;
-  allDay?: boolean;
+  dueAt?: string | null;
+  allDay?: boolean | null;
 }
 
 function toQueryString(params: Record<string, string | number | null | undefined>): string {
